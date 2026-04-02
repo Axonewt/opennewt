@@ -49,7 +49,8 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, BackgroundTasks, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import yaml
@@ -278,10 +279,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Serve Dashboard static files
+_dashboard_dir = ROOT / "dashboard"
+if _dashboard_dir.is_dir():
+    app.mount("/dashboard", StaticFiles(directory=str(_dashboard_dir)), name="dashboard")
+
 
 # ============================================================================
 # 根路由
 # ============================================================================
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Redirect to Dashboard"""
+    from starlette.responses import RedirectResponse
+    return RedirectResponse(url="/dashboard/index.html")
+
 
 @app.get("/health")
 async def health_check():

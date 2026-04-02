@@ -69,7 +69,7 @@ python api_server.py --port 8088
 
 That's it. The API server is now running at `http://127.0.0.1:8088`.
 
-Open **http://127.0.0.1:8088/docs** for interactive API documentation (Swagger UI).
+Open **http://127.0.0.1:8088** for the real-time Dashboard, or **http://127.0.0.1:8088/docs** for interactive API documentation (Swagger UI).
 
 ### Verify It Works
 
@@ -287,7 +287,7 @@ curl -X POST http://127.0.0.1:8088/api/llm/chat \
 - [x] **Phase 2** — Self-heal cycle: end-to-end autonomous repair
 - [x] **Phase 3** — REST API: full HTTP interface for any client
 - [x] **Phase 4** — MCP Server: native integration with Claude/Cursor
-- [ ] **Phase 5** — Dashboard: real-time web UI for monitoring
+- [x] **Phase 5** — Dashboard: real-time web UI for monitoring
 - [x] **Phase 6** — Docker: containerized deployment
 - [ ] **Phase 7** — Multi-node: distributed healing for microservices
 - [ ] **Phase 8** — Enterprise: auth, RBAC, audit logs

@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenNewt Engine — Neural Plasticity Dashboard</title>
+<style>
+/* ============================================================================
+   CSS RESET & VARIABLES
+   ============================================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  /* Dark theme (default) */
+  --bg-primary: #0a0e17;
+  --bg-secondary: #111827;
+  --bg-card: rgba(17, 24, 39, 0.8);
+  --bg-card-hover: rgba(26, 35, 55, 0.9);
+  --bg-input: #1a2332;
+  --border-color: rgba(59, 130, 246, 0.15);
+  --border-glow: rgba(59, 130, 246, 0.3);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #3b82f6;
+  --accent-glow: rgba(59, 130, 246, 0.4);
+  --success: #10b981;
+  --success-glow: rgba(16, 185, 129, 0.3);
+  --warning: #f59e0b;
+  --warning-glow: rgba(245, 158, 11, 0.3);
+  --danger: #ef4444;
+  --danger-glow: rgba(239, 68, 68, 0.3);
+  --purple: #8b5cf6;
+  --purple-glow: rgba(139, 92, 246, 0.3);
+  --cyan: #06b6d4;
+  --gradient-accent: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  --gradient-success: linear-gradient(135deg, #10b981, #06b6d4);
+  --gradient-warm: linear-gradient(135deg, #f59e0b, #ef4444);
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.3);
+  --shadow-glow: 0 0 30px var(--accent-glow);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --font: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: rgba(255,255,255,0.85);
+  --bg-card-hover: rgba(255,255,255,0.95);
+  --bg-input: #e2e8f0;
+  --border-color: rgba(59,130,246,0.2);
+  --border-glow: rgba(59,130,246,0.35);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* Animated background mesh */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, var(--accent-glow) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, var(--purple-glow) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, var(--cyan) 0%, transparent 40%);
+  opacity: 0.15;
+  z-index: 0;
+  pointer-events: none;
+  animation: meshDrift 20s ease-in-out infinite alternate;
+}
+
+[data-theme="light"] body::before { opacity: 0.07; }
+
+@keyframes meshDrift {
+  0% { transform: scale(1) translate(0,0); }
+  100% { transform: scale(1.1) translate(-2%, -3%); }
+}
+
+/* ============================================================================
+   LAYOUT
+   ============================================================================ */
+.app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: blur(20px);
+  background: var(--bg-card);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--gradient-accent);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.logo span { color: var(--accent); }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Theme toggle */
+.theme-toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition);
+}
+.theme-toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  top: 2px;
+  left: 2px;
+  transition: var(--transition);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+[data-theme="light"] .theme-toggle::after {
+  left: calc(100% - 20px);
+  background: var(--warning);
+  box-shadow: 0 0 8px var(--warning-glow);
+}
+
+/* Status indicator */
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid;
+  transition: var(--transition);
+}
+.status-badge.online {
+  background: rgba(16,185,129,0.1);
+  color: var(--success);
+  border-color: rgba(16,185,129,0.3);
+}
+.status-badge.offline {
+  background: rgba(239,68,68,0.1);
+  color: var(--danger);
+  border-color: rgba(239,68,68,0.3);
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s ease-in-out infinite;
+}
+.status-badge.online .status-dot { background: var(--success); }
+.status-badge.offline .status-dot { background: var(--danger); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+main {
+  flex: 1;
+  padding: 24px 28px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ============================================================================
+   GRID SYSTEM
+   ============================================================================ */
+.grid-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 280px;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.grid-middle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.grid-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .grid-top { grid-template-columns: 1fr 1fr; }
+  .grid-middle, .grid-bottom { grid-template-columns: 1fr; }
+  .grid-top > *:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .grid-top { grid-template-columns: 1fr; }
+  header { flex-wrap: wrap; gap: 12px; }
+  main { padding: 16px; }
+}
+
+/* ============================================================================
+   CARDS
+   ============================================================================ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 20px;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title .icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.icon-blue { background: rgba(59,130,246,0.15); color: var(--accent); }
+.icon-green { background: rgba(16,185,129,0.15); color: var(--success); }
+.icon-purple { background: rgba(139,92,246,0.15); color: var(--purple); }
+.icon-amber { background: rgba(245,158,11,0.15); color: var(--warning); }
+.icon-red { background: rgba(239,68,68,0.15); color: var(--danger); }
+.icon-cyan { background: rgba(6,182,212,0.15); color: var(--cyan); }
+
+/* ============================================================================
+   STAT CARDS
+   ============================================================================ */
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.stat-change {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 6px;
+}
+.stat-change.up { color: var(--success); }
+.stat-change.down { color: var(--danger); }
+
+/* ============================================================================
+   HEALTH RING
+   ============================================================================ */
+.health-ring-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.health-ring {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+.health-ring svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+.health-ring circle {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+.health-ring .track {
+  stroke: var(--bg-input);
+}
+.health-ring .fill {
+  stroke: var(--success);
+  stroke-dasharray: 408;
+  stroke-dashoffset: 408;
+  transition: stroke-dashoffset 1.5s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.5s;
+  filter: drop-shadow(0 0 6px var(--success-glow));
+}
+.health-ring .fill.warning { stroke: var(--warning); filter: drop-shadow(0 0 6px var(--warning-glow)); }
+.health-ring .fill.danger { stroke: var(--danger); filter: drop-shadow(0 0 6px var(--danger-glow)); }
+
+.health-score-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.health-score-num {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.health-score-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ============================================================================
+   AGENT STATUS GRID
+   ============================================================================ */
+.agent-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.agent-card {
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  transition: var(--transition);
+  cursor: default;
+}
+.agent-card:hover {
+  border-color: var(--border-glow);
+  transform: translateY(-1px);
+}
+.agent-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.agent-role {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.agent-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.agent-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.agent-dot.ready { background: var(--success); box-shadow: 0 0 6px var(--success-glow); }
+.agent-dot.lazy { background: var(--warning); box-shadow: 0 0 6px var(--warning-glow); }
+.agent-dot.error { background: var(--danger); box-shadow: 0 0 6px var(--danger-glow); }
+
+/* ============================================================================
+   ACTION PANEL
+   ============================================================================ */
+.actions-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font);
+  position: relative;
+  overflow: hidden;
+}
+.btn:hover {
+  border-color: var(--border-glow);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.btn:active { transform: translateY(0); }
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary {
+  background: var(--gradient-accent);
+  border-color: transparent;
+  color: #fff;
+}
+.btn-primary:hover {
+  box-shadow: 0 4px 20px var(--accent-glow);
+  border-color: transparent;
+}
+
+.btn-success {
+  background: var(--gradient-success);
+  border-color: transparent;
+  color: #fff;
+}
+.btn-success:hover {
+  box-shadow: 0 4px 20px var(--success-glow);
+  border-color: transparent;
+}
+
+.btn-danger {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.3);
+  color: var(--danger);
+}
+.btn-danger:hover {
+  background: rgba(239,68,68,0.25);
+  box-shadow: 0 4px 20px var(--danger-glow);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.78rem;
+}
+
+.btn .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================================
+   SCAN RESULTS
+   ============================================================================ */
+.scan-results {
+  display: none;
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+.scan-results.visible { display: block; }
+
+.metric-bars { display: flex; flex-direction: column; gap: 10px; }
+.metric-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.metric-bar-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  width: 120px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.metric-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.metric-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--gradient-accent);
+}
+.metric-bar-fill.high { background: var(--gradient-success); }
+.metric-bar-fill.mid { background: var(--gradient-warm); }
+.metric-bar-fill.low { background: var(--danger); }
+.metric-bar-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  width: 40px;
+}
+
+/* Issues list */
+.issues-list {
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.issue-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.82rem;
+}
+.issue-item:last-child { border-bottom: none; }
+.issue-severity {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.issue-severity.high { background: rgba(239,68,68,0.15); color: var(--danger); }
+.issue-severity.medium { background: rgba(245,158,11,0.15); color: var(--warning); }
+.issue-severity.low { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+/* ============================================================================
+   REPAIR TASKS
+   ============================================================================ */
+.repair-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.repair-task-item {
+  padding: 12px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--text-muted);
+  transition: var(--transition);
+}
+.repair-task-item.success { border-left-color: var(--success); }
+.repair-task-item.failed { border-left-color: var(--danger); }
+.repair-task-item.running { border-left-color: var(--accent); animation: taskPulse 2s ease-in-out infinite; }
+.repair-task-item.partial { border-left-color: var(--warning); }
+
+@keyframes taskPulse {
+  0%, 100% { border-left-color: var(--accent); }
+  50% { border-left-color: var(--purple); }
+}
+
+.repair-task-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.repair-task-id {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.repair-task-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.repair-task-status.success { background: rgba(16,185,129,0.15); color: var(--success); }
+.repair-task-status.failed { background: rgba(239,68,68,0.15); color: var(--danger); }
+.repair-task-status.running { background: rgba(59,130,246,0.15); color: var(--accent); }
+.repair-task-status.partial { background: rgba(245,158,11,0.15); color: var(--warning); }
+.repair-task-status.pending { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+.repair-task-status.skipped { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+
+.repair-task-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.repair-task-meta span { margin-right: 12px; }
+
+/* ============================================================================
+   LOGS
+   ============================================================================ */
+.logs-container {
+  height: 320px;
+  overflow-y: auto;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  border: 1px solid var(--border-color);
+}
+.log-entry { white-space: pre-wrap; word-break: break-all; }
+.log-entry .timestamp { color: var(--text-muted); }
+.log-entry .level { font-weight: 700; }
+.log-entry .level.INFO { color: var(--accent); }
+.log-entry .level.WARNING { color: var(--warning); }
+.log-entry .level.ERROR { color: var(--danger); }
+.log-entry .name { color: var(--purple); }
+.log-entry .msg { color: var(--text-secondary); }
+
+.ws-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+.ws-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+.ws-dot.connected { background: var(--success); }
+.ws-dot.disconnected { background: var(--danger); }
+
+/* ============================================================================
+   EVENTS TIMELINE
+   ============================================================================ */
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 350px;
+  overflow-y: auto;
+}
+.event-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+.event-item:last-child { border-bottom: none; }
+
+.event-timeline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+.event-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.event-dot.REPAIR { background: var(--success); box-shadow: 0 0 6px var(--success-glow); }
+.event-dot.SCAN { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+.event-dot.SIGNAL { background: var(--warning); box-shadow: 0 0 6px var(--warning-glow); }
+.event-dot.DEFAULT { background: var(--text-muted); }
+
+.event-line {
+  width: 1px;
+  flex: 1;
+  background: var(--border-color);
+  margin-top: 4px;
+}
+
+.event-content { flex: 1; min-width: 0; }
+.event-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.event-type-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(59,130,246,0.15);
+  color: var(--accent);
+}
+.event-time {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.event-detail {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.event-agent {
+  font-size: 0.7rem;
+  color: var(--purple);
+  font-weight: 600;
+}
+
+/* ============================================================================
+   IMMUNE MEMORY
+   ============================================================================ */
+.immune-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.immune-item {
+  padding: 14px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+.immune-item:hover {
+  border-color: var(--border-glow);
+}
+
+.immune-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.immune-strategy {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.immune-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 0.72rem;
+}
+.immune-stat { color: var(--text-muted); }
+.immune-stat strong { color: var(--text-secondary); }
+.immune-damage {
+  font-size: 0.72rem;
+  color: var(--warning);
+  font-weight: 600;
+}
+.immune-symptoms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.immune-symptom {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(139,92,246,0.1);
+  color: var(--purple);
+  border: 1px solid rgba(139,92,246,0.2);
+}
+
+/* ============================================================================
+   TARGETS PANEL
+   ============================================================================ */
+.target-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.target-form .full-width { grid-column: 1 / -1; }
+
+.input-field {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-family: var(--font);
+  transition: var(--transition);
+  outline: none;
+}
+.input-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.input-field::placeholder { color: var(--text-muted); }
+
+.targets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.target-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+.target-item:hover {
+  border-color: var(--border-glow);
+}
+.target-info { flex: 1; min-width: 0; }
+.target-name { font-size: 0.82rem; font-weight: 700; }
+.target-path {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.target-health {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.target-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ============================================================================
+   TOAST / NOTIFICATION
+   ============================================================================ */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-card);
+  font-size: 0.82rem;
+  animation: toastIn 0.3s ease-out;
+  max-width: 360px;
+}
+.toast.success { border-left: 3px solid var(--success); }
+.toast.error { border-left: 3px solid var(--danger); }
+.toast.info { border-left: 3px solid var(--accent); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ============================================================================
+   EMPTY STATE
+   ============================================================================ */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+}
+.empty-state .icon { font-size: 2rem; margin-bottom: 8px; }
+.empty-state p { font-size: 0.82rem; }
+
+/* ============================================================================
+   SCROLLBAR
+   ============================================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-glow); }
+
+/* ============================================================================
+   LOADING
+   ============================================================================ */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-input) 25%, var(--bg-card-hover) 50%, var(--bg-input) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================================
+   REPAIR CONFIG
+   ============================================================================ */
+.repair-config {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+.repair-config label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.repair-config input[type="range"] {
+  width: 120px;
+  accent-color: var(--accent);
+}
+.repair-config input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      Open<span>Newt</span> Engine
+    </div>
+    <div class="header-actions">
+      <div class="status-badge offline" id="engine-status">
+        <div class="status-dot"></div>
+        <span>Connecting</span>
+      </div>
+      <div class="theme-toggle" id="theme-toggle" title="Toggle theme"></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Row 1: Stats + Health + Agents -->
+    <div class="grid-top">
+      <!-- Uptime -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-blue">⏱</span> Uptime</div>
+        </div>
+        <div class="stat-value" id="stat-uptime">--:--:--</div>
+        <div class="stat-label">Engine running time</div>
+        <div class="stat-change" id="stat-started">-</div>
+      </div>
+
+      <!-- Operations -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-green">⚡</span> Operations</div>
+        </div>
+        <div style="display:flex;gap:24px;">
+          <div>
+            <div class="stat-value" id="stat-scans">0</div>
+            <div class="stat-label">Scans</div>
+          </div>
+          <div>
+            <div class="stat-value" id="stat-repairs">0</div>
+            <div class="stat-label">Repairs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LLM Provider -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-purple">🤖</span> LLM Provider</div>
+        </div>
+        <div class="stat-value" style="font-size:1.3rem;" id="stat-llm">Ollama</div>
+        <div class="stat-label" id="stat-llm-model">glm-4.7-flash</div>
+      </div>
+
+      <!-- Health Ring -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-cyan">💗</span> Health</div>
+        </div>
+        <div class="health-ring-container">
+          <div class="health-ring">
+            <svg viewBox="0 0 140 140">
+              <circle class="track" cx="70" cy="70" r="65"/>
+              <circle class="fill" id="health-fill" cx="70" cy="70" r="65"/>
+            </svg>
+            <div class="health-score-text">
+              <div class="health-score-num" id="health-num">--</div>
+              <div class="health-score-label">Health Score</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Actions + Targets -->
+    <div class="grid-middle">
+      <!-- Actions Panel -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-amber">🔧</span> Control Panel</div>
+        </div>
+
+        <div class="actions-row" style="margin-bottom:14px;">
+          <button class="btn btn-primary" id="btn-scan" onclick="runScan()">
+            <span>🔍</span> Scan Codebase
+          </button>
+          <button class="btn btn-success" id="btn-repair" onclick="runRepair()">
+            <span>🛡</span> Auto Repair
+          </button>
+          <button class="btn btn-danger btn-sm" id="btn-repair-async" onclick="runRepairAsync()">
+            <span>⚡</span> Async Repair
+          </button>
+        </div>
+
+        <!-- Repair Config -->
+        <div class="repair-config">
+          <label>
+            Health Threshold
+            <input type="range" id="repair-threshold" min="0.1" max="1.0" step="0.05" value="0.7">
+            <span id="threshold-value">0.70</span>
+          </label>
+          <label>
+            <span>Use LLM for plan generation</span>
+            <input type="checkbox" id="repair-use-llm" checked>
+          </label>
+        </div>
+
+        <!-- Scan Results (hidden by default) -->
+        <div class="scan-results" id="scan-results">
+          <div style="font-weight:700;margin-bottom:12px;font-size:0.9rem;">Scan Results</div>
+          <div class="metric-bars" id="metric-bars"></div>
+          <div class="issues-list" id="issues-list"></div>
+        </div>
+      </div>
+
+      <!-- Targets Panel -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-green">🎯</span> Guarded Targets</div>
+          <span style="font-size:0.75rem;color:var(--text-muted)" id="targets-count">0 targets</span>
+        </div>
+
+        <div class="target-form">
+          <input class="input-field" id="target-name" placeholder="Target name">
+          <input class="input-field" id="target-path" placeholder="Absolute path">
+          <input class="input-field full-width" id="target-tags" placeholder="Tags (comma separated)">
+          <button class="btn btn-primary btn-sm full-width" onclick="registerTarget()">+ Register Target</button>
+        </div>
+
+        <div class="targets-list" id="targets-list">
+          <div class="empty-state">
+            <div class="icon">🎯</div>
+            <p>No guarded targets yet. Register a codebase to monitor.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Repair Tasks + Agents -->
+    <div class="grid-middle">
+      <!-- Repair Tasks -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-blue">📋</span> Repair Tasks</div>
+          <button class="btn btn-sm" onclick="loadRepairs()">↻ Refresh</button>
+        </div>
+        <div class="repair-tasks-list" id="repair-tasks-list">
+          <div class="empty-state">
+            <div class="icon">📋</div>
+            <p>No repair tasks yet. Run a scan and repair to get started.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent Status -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-purple">🤖</span> Neural Agents</div>
+        </div>
+        <div class="agent-grid" id="agent-grid">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Logs + Events -->
+    <div class="grid-bottom">
+      <!-- Real-time Logs -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-amber">📡</span> Live Logs</div>
+          <button class="btn btn-sm" onclick="clearLogs()">Clear</button>
+        </div>
+        <div class="logs-container" id="logs-container">
+          <div class="empty-state">
+            <div class="icon">📡</div>
+            <p>Connecting to engine log stream...</p>
+          </div>
+        </div>
+        <div class="ws-status" id="ws-status">
+          <div class="ws-dot disconnected" id="ws-dot"></div>
+          <span id="ws-text">Disconnected</span>
+        </div>
+      </div>
+
+      <!-- Events Timeline -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-cyan">📊</span> Event Timeline</div>
+          <button class="btn btn-sm" onclick="loadEvents()">↻ Refresh</button>
+        </div>
+        <div class="events-list" id="events-list">
+          <div class="empty-state">
+            <div class="icon">📊</div>
+            <p>No events recorded yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 5: Immune Memory -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-header">
+        <div class="card-title"><span class="icon icon-green">🧬</span> Immune Memory</div>
+        <button class="btn btn-sm" onclick="loadImmuneMemory()">↻ Refresh</button>
+      </div>
+      <div class="immune-list" id="immune-list">
+        <div class="empty-state">
+          <div class="icon">🧬</div>
+          <p>Immune memory is empty. Successful repairs will create learned patterns.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ============================================================================
+// API CLIENT
+// ============================================================================
+const API_BASE = window.location.origin;
+
+async function api(path, opts = {}) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...opts.headers },
+      ...opts,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  } catch (e) {
+    if (e.message.includes('Failed to fetch')) {
+      throw new Error('Engine not reachable. Is the API server running?');
+    }
+    throw e;
+  }
+}
+
+// ============================================================================
+// THEME
+// ============================================================================
+const themeToggle = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('opennewt-theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('opennewt-theme', next);
+});
+
+// ============================================================================
+// TOAST
+// ============================================================================
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(20px)';
+    toast.style.transition = '0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+// ============================================================================
+// HEALTH RING
+// ============================================================================
+function updateHealthRing(score) {
+  const circumference = 2 * Math.PI * 65; // ~408
+  const offset = circumference * (1 - score / 100);
+  const fill = document.getElementById('health-fill');
+  const num = document.getElementById('health-num');
+
+  fill.style.strokeDasharray = circumference;
+  fill.style.strokeDashoffset = offset;
+
+  fill.classList.remove('warning', 'danger');
+  if (score < 50) fill.classList.add('danger');
+  else if (score < 70) fill.classList.add('warning');
+
+  num.textContent = score.toFixed(0) + '%';
+  num.style.color = score >= 70 ? 'var(--success)' : score >= 50 ? 'var(--warning)' : 'var(--danger)';
+}
+
+// ============================================================================
+// FORMAT HELPERS
+// ============================================================================
+function formatUptime(seconds) {
+  if (!seconds || seconds < 0) return '--:--:--';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function formatTime(iso) {
+  if (!iso) return '-';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString();
+  } catch { return iso; }
+}
+
+function formatDateTime(iso) {
+  if (!iso) return '-';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString();
+  } catch { return iso; }
+}
+
+// ============================================================================
+// ENGINE STATUS
+// ============================================================================
+async function pollStatus() {
+  try {
+    const [health, status] = await Promise.all([
+      api('/health'),
+      api('/api/status'),
+    ]);
+
+    // Update status badge
+    const badge = document.getElementById('engine-status');
+    badge.className = 'status-badge online';
+    badge.querySelector('span').textContent = 'Online';
+
+    // Uptime
+    document.getElementById('stat-uptime').textContent = formatUptime(health.uptime_seconds);
+    document.getElementById('stat-started').textContent = 'Started: ' + formatDateTime(status.started_at);
+
+    // Operations
+    document.getElementById('stat-scans').textContent = status.scan_count;
+    document.getElementById('stat-repairs').textContent = status.repair_count;
+
+    // LLM
+    document.getElementById('stat-llm').textContent = (status.llm_provider || 'ollama').toUpperCase();
+    document.getElementById('stat-llm-model').textContent = status.llm_model || '-';
+
+  } catch (e) {
+    const badge = document.getElementById('engine-status');
+    badge.className = 'status-badge offline';
+    badge.querySelector('span').textContent = 'Offline';
+    document.getElementById('stat-uptime').textContent = '--:--:--';
+  }
+}
+
+// ============================================================================
+// AGENTS
+// ============================================================================
+async function loadAgents() {
+  try {
+    const data = await api('/api/agents');
+    const grid = document.getElementById('agent-grid');
+    grid.innerHTML = '';
+
+    const icons = { soma: '👁', plasticus: '🧠', effector: '🔧', mnemosyne: '💾' };
+    for (const [key, agent] of Object.entries(data.agents)) {
+      const card = document.createElement('div');
+      card.className = 'agent-card';
+      card.innerHTML = `
+        <div class="agent-name">${icons[key] || ''} ${agent.name}</div>
+        <div class="agent-role">${agent.role}</div>
+        <div class="agent-status-indicator">
+          <div class="agent-dot ${agent.status}"></div>
+          <span style="color:var(--text-secondary)">${agent.status === 'ready' ? 'Ready' : 'Standby'}</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    }
+  } catch (e) {
+    console.error('Failed to load agents:', e);
+  }
+}
+
+// ============================================================================
+// SCAN
+// ============================================================================
+async function runScan() {
+  const btn = document.getElementById('btn-scan');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Scanning...';
+
+  try {
+    const data = await api('/api/scan', { method: 'POST' });
+    const score = (data.health_score * 100);
+    updateHealthRing(score);
+
+    // Show results
+    const results = document.getElementById('scan-results');
+    results.classList.add('visible');
+
+    // Metric bars
+    const barsEl = document.getElementById('metric-bars');
+    barsEl.innerHTML = '';
+    if (data.metrics) {
+      const labels = {
+        static_analysis: 'Static Analysis',
+        test_coverage: 'Test Coverage',
+        dependency_health: 'Dependencies',
+        code_complexity: 'Complexity',
+        historical_stability: 'Stability',
+        documentation: 'Documentation',
+      };
+      for (const [key, label] of Object.entries(labels)) {
+        const val = data.metrics[key];
+        if (val == null) continue;
+        const pct = (val * 100).toFixed(0);
+        const cls = val >= 0.7 ? 'high' : val >= 0.5 ? 'mid' : 'low';
+        barsEl.innerHTML += `
+          <div class="metric-bar-item">
+            <div class="metric-bar-label">${label}</div>
+            <div class="metric-bar-track"><div class="metric-bar-fill ${cls}" style="width:${pct}%"></div></div>
+            <div class="metric-bar-value">${pct}%</div>
+          </div>`;
+      }
+    }
+
+    // Issues
+    const issuesEl = document.getElementById('issues-list');
+    issuesEl.innerHTML = '';
+    if (data.issues && data.issues.length > 0) {
+      for (const issue of data.issues) {
+        const sev = issue.severity || 'low';
+        issuesEl.innerHTML += `
+          <div class="issue-item">
+            <span class="issue-severity ${sev}">${sev}</span>
+            <span>${issue.message || issue.description || JSON.stringify(issue)}</span>
+          </div>`;
+      }
+    } else {
+      issuesEl.innerHTML = '<div style="padding:8px;color:var(--success);font-size:0.82rem;">✅ No issues detected!</div>';
+    }
+
+    showToast(`Scan complete: Health ${score.toFixed(1)}%`, score >= 70 ? 'success' : 'error');
+
+    // Refresh targets (health might have changed)
+    loadTargets();
+
+  } catch (e) {
+    showToast('Scan failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>🔍</span> Scan Codebase';
+  }
+}
+
+// ============================================================================
+// REPAIR
+// ============================================================================
+async function runRepair() {
+  const btn = document.getElementById('btn-repair');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Repairing...';
+
+  try {
+    const data = await api('/api/repair', {
+      method: 'POST',
+      body: JSON.stringify({
+        health_threshold: parseFloat(document.getElementById('repair-threshold').value),
+        use_llm: document.getElementById('repair-use-llm').checked,
+        auto_approve: true,
+      }),
+    });
+
+    if (data.status === 'success') {
+      showToast(`Repair complete: ${data.health_score_before?.toFixed(2)} → ${data.health_score_after?.toFixed(2)}`, 'success');
+    } else if (data.status === 'skipped') {
+      showToast(data.message || 'System healthy, no repair needed.', 'info');
+    } else {
+      showToast(`Repair ${data.status}: ${data.message || ''}`, 'warning');
+    }
+
+    loadRepairs();
+    loadEvents();
+  } catch (e) {
+    showToast('Repair failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>🛡</span> Auto Repair';
+  }
+}
+
+async function runRepairAsync() {
+  const btn = document.getElementById('btn-repair-async');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Queued...';
+
+  try {
+    const data = await api('/api/repair/async', {
+      method: 'POST',
+      body: JSON.stringify({
+        health_threshold: parseFloat(document.getElementById('repair-threshold').value),
+        use_llm: document.getElementById('repair-use-llm').checked,
+        auto_approve: true,
+      }),
+    });
+
+    showToast(`Async repair queued: ${data.task_id}. Polling for updates...`, 'info');
+
+    // Poll for completion
+    const pollId = setInterval(async () => {
+      try {
+        const task = await api(data.poll_url);
+        loadRepairs();
+        if (['success', 'partial', 'failed', 'skipped', 'no_plans'].includes(task.status)) {
+          clearInterval(pollId);
+          const msg = task.status === 'success'
+            ? `Repair ${task.task_id} complete: ${task.health_delta > 0 ? '+' : ''}${task.health_delta} delta`
+            : `Repair ${task.task_id}: ${task.status}`;
+          showToast(msg, task.status === 'success' ? 'success' : 'warning');
+          loadEvents();
+        }
+      } catch { clearInterval(pollId); }
+    }, 3000);
+
+  } catch (e) {
+    showToast('Failed to queue repair: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>⚡</span> Async Repair';
+  }
+}
+
+// ============================================================================
+// REPAIR TASKS
+// ============================================================================
+async function loadRepairs() {
+  try {
+    const data = await api('/api/repairs');
+    const list = document.getElementById('repair-tasks-list');
+
+    if (!data.tasks || data.tasks.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No repair tasks yet.</p></div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    // Show newest first
+    const sorted = [...data.tasks].reverse();
+    for (const task of sorted.slice(0, 20)) {
+      const metaParts = [];
+      if (task.plan_name) metaParts.push(`Plan: ${task.plan_name}`);
+      if (task.steps_completed != null) metaParts.push(`Steps: ${task.steps_completed}/${task.steps_total}`);
+      if (task.health_delta != null) metaParts.push(`Delta: ${task.health_delta > 0 ? '+' : ''}${task.health_delta}`);
+      if (task.created_at) metaParts.push(formatTime(task.created_at));
+
+      list.innerHTML += `
+        <div class="repair-task-item ${task.status}">
+          <div class="repair-task-header">
+            <div class="repair-task-id">${task.id || '-'}</div>
+            <span class="repair-task-status ${task.status}">${task.status}</span>
+          </div>
+          <div class="repair-task-meta">${metaParts.map(m => `<span>${m}</span>`).join('')}</div>
+          ${task.message ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${task.message}</div>` : ''}
+        </div>`;
+    }
+  } catch (e) {
+    console.error('Failed to load repairs:', e);
+  }
+}
+
+// ============================================================================
+// TARGETS
+// ============================================================================
+async function loadTargets() {
+  try {
+    const data = await api('/api/targets');
+    document.getElementById('targets-count').textContent = `${data.total} target${data.total !== 1 ? 's' : ''}`;
+
+    const list = document.getElementById('targets-list');
+    if (!data.targets || data.targets.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>No guarded targets yet.</p></div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    for (const t of data.targets) {
+      const healthColor = t.last_health == null ? 'var(--text-muted)' :
+        t.last_health >= 0.7 ? 'var(--success)' :
+        t.last_health >= 0.5 ? 'var(--warning)' : 'var(--danger)';
+
+      list.innerHTML += `
+        <div class="target-item">
+          <div class="target-info">
+            <div class="target-name">${t.name}</div>
+            <div class="target-path">${t.path}</div>
+            <div class="target-health" style="color:${healthColor}">
+              ${t.last_health != null ? `Health: ${(t.last_health * 100).toFixed(0)}%` : 'Not yet scanned'}
+            </div>
+          </div>
+          <div class="target-actions">
+            <button class="btn btn-sm" onclick="scanTarget('${t.target_id}')">🔍</button>
+            <button class="btn btn-sm btn-danger" onclick="removeTarget('${t.target_id}')">✕</button>
+          </div>
+        </div>`;
+    }
+  } catch (e) {
+    console.error('Failed to load targets:', e);
+  }
+}
+
+async function registerTarget() {
+  const name = document.getElementById('target-name').value.trim();
+  const path = document.getElementById('target-path').value.trim();
+  const tags = document.getElementById('target-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+
+  if (!name || !path) {
+    showToast('Name and path are required.', 'error');
+    return;
+  }
+
+  try {
+    await api('/api/targets', {
+      method: 'POST',
+      body: JSON.stringify({ name, path, tags }),
+    });
+    showToast(`Target "${name}" registered!`, 'success');
+    document.getElementById('target-name').value = '';
+    document.getElementById('target-path').value = '';
+    document.getElementById('target-tags').value = '';
+    loadTargets();
+  } catch (e) {
+    showToast('Failed to register target: ' + e.message, 'error');
+  }
+}
+
+async function removeTarget(id) {
+  if (!confirm('Remove this target?')) return;
+  try {
+    await api(`/api/targets/${id}`, { method: 'DELETE' });
+    showToast('Target removed.', 'info');
+    loadTargets();
+  } catch (e) {
+    showToast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function scanTarget(id) {
+  try {
+    const data = await api(`/api/targets/${id}/scan`, { method: 'POST' });
+    showToast(`${data.name}: Health ${(data.health_score * 100).toFixed(0)}%`, data.needs_repair ? 'warning' : 'success');
+    loadTargets();
+  } catch (e) {
+    showToast('Scan failed: ' + e.message, 'error');
+  }
+}
+
+// ============================================================================
+// WEBSOCKET LOGS
+// ============================================================================
+let ws = null;
+let logBuffer = [];
+const MAX_LOG_LINES = 500;
+
+function connectLogs() {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${protocol}//${location.host}/ws/logs`;
+
+  try {
+    ws = new WebSocket(url);
+
+    ws.onopen = () => {
+      document.getElementById('ws-dot').className = 'ws-dot connected';
+      document.getElementById('ws-text').textContent = 'Connected';
+    };
+
+    ws.onmessage = (event) => {
+      if (event.data === 'pong') return;
+      appendLog(event.data);
+    };
+
+    ws.onclose = () => {
+      document.getElementById('ws-dot').className = 'ws-dot disconnected';
+      document.getElementById('ws-text').textContent = 'Disconnected — retrying in 3s';
+      setTimeout(connectLogs, 3000);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  } catch (e) {
+    document.getElementById('ws-dot').className = 'ws-dot disconnected';
+    document.getElementById('ws-text').textContent = 'Connection failed';
+    setTimeout(connectLogs, 3000);
+  }
+}
+
+function appendLog(raw) {
+  const container = document.getElementById('logs-container');
+
+  // Clear empty state on first log
+  if (container.querySelector('.empty-state')) {
+    container.innerHTML = '';
+  }
+
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+
+  // Parse: "2026-04-03 02:10:00 [axonewt-api] message"
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+\[([^\]]+)\]\s+(.*)/);
+  if (match) {
+    const msg = match[3];
+    const msgMatch = msg.match(/^\[(INFO|WARNING|ERROR|DEBUG)\]\s+(.*)/);
+    if (msgMatch) {
+      entry.innerHTML = `<span class="timestamp">${match[1]}</span> <span class="level ${msgMatch[1]}">${msgMatch[1].padEnd(7)}</span> <span class="name">[${match[2]}]</span> <span class="msg">${escapeHtml(msgMatch[2])}</span>`;
+    } else {
+      entry.innerHTML = `<span class="timestamp">${match[1]}</span> <span class="name">[${match[2]}]</span> <span class="msg">${escapeHtml(msg)}</span>`;
+    }
+  } else {
+    entry.innerHTML = `<span class="msg">${escapeHtml(raw)}</span>`;
+  }
+
+  container.appendChild(entry);
+  logBuffer.push(entry);
+
+  // Trim old entries
+  while (logBuffer.length > MAX_LOG_LINES) {
+    const old = logBuffer.shift();
+    if (old.parentNode) old.remove();
+  }
+
+  // Auto-scroll
+  container.scrollTop = container.scrollHeight;
+}
+
+function clearLogs() {
+  const container = document.getElementById('logs-container');
+  container.innerHTML = '<div class="empty-state"><div class="icon">📡</div><p>Logs cleared.</p></div>';
+  logBuffer = [];
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ============================================================================
+// EVENTS
+// ============================================================================
+async function loadEvents() {
+  try {
+    const data = await api('/api/events?limit=30');
+    const list = document.getElementById('events-list');
+
+    if (!data.events || data.events.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">📊</div><p>No events recorded yet.</p></div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    for (const event of data.events) {
+      const detail = event.payload
+        ? Object.entries(event.payload).map(([k,v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join(' | ')
+        : '';
+
+      list.innerHTML += `
+        <div class="event-item">
+          <div class="event-timeline">
+            <div class="event-dot ${event.event_type || 'DEFAULT'}"></div>
+            <div class="event-line"></div>
+          </div>
+          <div class="event-content">
+            <div class="event-header">
+              <span class="event-type-badge">${event.event_type || '-'}</span>
+              <span class="event-agent">${event.agent || ''}</span>
+              <span class="event-time">${formatTime(event.timestamp)}</span>
+            </div>
+            <div class="event-detail" title="${escapeHtml(detail)}">${escapeHtml(detail || event.event_id)}</div>
+          </div>
+        </div>`;
+    }
+  } catch (e) {
+    console.error('Failed to load events:', e);
+  }
+}
+
+// ============================================================================
+// IMMUNE MEMORY
+// ============================================================================
+async function loadImmuneMemory() {
+  try {
+    const data = await api('/api/immune-memory?limit=15');
+    const list = document.getElementById('immune-list');
+
+    if (!data.immune_memory || data.immune_memory.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">🧬</div><p>Immune memory is empty. Successful repairs will create learned patterns.</p></div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    for (const mem of data.immune_memory) {
+      const symptoms = (mem.symptoms || []).map(s =>
+        `<span class="immune-symptom">${escapeHtml(s)}</span>`
+      ).join('');
+
+      list.innerHTML += `
+        <div class="immune-item">
+          <div class="immune-header">
+            <div class="immune-strategy">${escapeHtml(mem.repair_strategy || '-')}</div>
+            <div class="immune-stats">
+              <span class="immune-stat">Success: <strong>${((mem.success_rate || 0) * 100).toFixed(0)}%</strong></span>
+              <span class="immune-stat">Uses: <strong>${mem.usage_count || 0}</strong></span>
+            </div>
+          </div>
+          <div class="immune-damage">${escapeHtml(mem.damage_type || '')}</div>
+          ${symptoms ? `<div class="immune-symptoms">${symptoms}</div>` : ''}
+        </div>`;
+    }
+  } catch (e) {
+    console.error('Failed to load immune memory:', e);
+  }
+}
+
+// ============================================================================
+// THRESHOLD SLIDER
+// ============================================================================
+const thresholdSlider = document.getElementById('repair-threshold');
+const thresholdValue = document.getElementById('threshold-value');
+thresholdSlider.addEventListener('input', () => {
+  thresholdValue.textContent = parseFloat(thresholdSlider.value).toFixed(2);
+});
+
+// ============================================================================
+// INIT
+// ============================================================================
+async function init() {
+  // Poll status every 5s
+  pollStatus();
+  setInterval(pollStatus, 5000);
+
+  // Load data
+  await Promise.all([
+    loadAgents(),
+    loadTargets(),
+    loadEvents(),
+    loadImmuneMemory(),
+    loadRepairs(),
+  ]);
+
+  // Start WebSocket logs
+  connectLogs();
+}
+
+// Start when DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
