@@ -194,6 +194,15 @@ class EngineState:
         self._plasticus = None
         self._effector = None
         self._mnemosyne = None
+        # Daemon 状态
+        self.daemon_running: bool = False
+        self.daemon_task: Optional[asyncio.Task] = None
+        self.daemon_interval: int = 60  # 默认 60 秒扫描间隔
+        self.daemon_last_tick: str = ""
+        self.daemon_tick_count: int = 0
+        # 健康度趋势（每个 target 保留最近 20 次扫描）
+        self._health_history: Dict[str, List[Dict]] = {}
+        self._max_history = 20
 
     def init_agents(self):
         """初始化所有 Agent"""
@@ -266,9 +275,34 @@ async def lifespan(app: FastAPI):
     """应用生命周期"""
     engine_state.config = load_config()
     engine_state.started_at = datetime.now().isoformat()
+
+    # Daemon 配置
+    daemon_cfg = engine_state.config.get("daemon", {})
+    engine_state.daemon_interval = daemon_cfg.get("interval", 60)
+
     logger.info("OpenNewt API Server starting...")
     logger.info(f"Project: {ROOT}")
+    logger.info(f"Daemon interval: {engine_state.daemon_interval}s")
+
+    # 启动 Daemon 后台监控循环
+    engine_state.daemon_running = True
+    engine_state.daemon_task = asyncio.create_task(
+        daemon_monitor_loop(),
+        name="daemon-monitor"
+    )
+    logger.info("Daemon monitor started")
+
     yield
+
+    # 关闭 Daemon
+    engine_state.daemon_running = False
+    if engine_state.daemon_task and not engine_state.daemon_task.done():
+        engine_state.daemon_task.cancel()
+        try:
+            await engine_state.daemon_task
+        except asyncio.CancelledError:
+            pass
+    logger.info("Daemon monitor stopped")
     logger.info("OpenNewt API Server shutting down...")
 
 
@@ -951,6 +985,499 @@ class TargetInfo(BaseModel):
     last_scan: Optional[str] = None
     last_health: Optional[float] = None
     status: str = "active"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Daemon Monitor — 持续监控循环
+# ═══════════════════════════════════════════════════════════════════════════
+
+async def daemon_monitor_loop():
+    """
+    后台持续监控循环。
+    
+    每个 tick：
+    1. 遍历所有 active targets
+    2. 对每个 target 执行 Soma 健康扫描
+    3. 记录健康度趋势
+    4. 如果健康度低于阈值且 auto_repair=True，自动触发自愈链路
+    5. 广播日志到 WebSocket
+    """
+    from src.agents.soma_dev import SomaDev
+    from src.agents.mnemosyne_dev import Event
+
+    await broadcaster.broadcast(json.dumps({
+        "level": "INFO", "source": "daemon",
+        "message": "Daemon monitor loop started",
+        "timestamp": datetime.now().isoformat()
+    }))
+
+    while engine_state.daemon_running:
+        try:
+            engine_state.daemon_tick_count += 1
+            tick_id = engine_state.daemon_tick_count
+            engine_state.daemon_last_tick = datetime.now().isoformat()
+
+            active_targets = {
+                k: v for k, v in _targets_store.items()
+                if v.get("status") == "active"
+            }
+
+            if not active_targets:
+                await asyncio.sleep(engine_state.daemon_interval)
+                continue
+
+            await broadcaster.broadcast(json.dumps({
+                "level": "INFO", "source": "daemon",
+                "message": f"Tick #{tick_id}: scanning {len(active_targets)} target(s)",
+                "timestamp": datetime.now().isoformat()
+            }))
+
+            for target_id, target in active_targets.items():
+                if not engine_state.daemon_running:
+                    break
+
+                target_path = target["path"]
+                threshold = target.get("health_threshold", 0.7)
+                auto_repair = target.get("auto_repair", False)
+
+                # 检查是否需要扫描（基于 scan_interval）
+                last_scan = target.get("last_scan")
+                scan_interval = target.get("scan_interval", 60)
+                if last_scan:
+                    try:
+                        elapsed = (datetime.now() - datetime.fromisoformat(last_scan)).total_seconds()
+                        if elapsed < scan_interval:
+                            continue  # 还没到扫描时间
+                    except Exception:
+                        pass
+
+                # Soma 扫描
+                try:
+                    scanner = SomaDev(project_path=target_path)
+                    report = scanner.scan_codebase()
+                    health_score = report["health_score"]
+                    health_status = report.get("health_status", "unknown")
+
+                    # 更新 target 状态
+                    target["last_scan"] = datetime.now().isoformat()
+                    target["last_health"] = health_score
+
+                    # 记录健康度趋势
+                    if target_id not in engine_state._health_history:
+                        engine_state._health_history[target_id] = []
+
+                    history_entry = {
+                        "timestamp": datetime.now().isoformat(),
+                        "health_score": health_score,
+                        "health_status": health_status,
+                        "tick": tick_id,
+                    }
+                    engine_state._health_history[target_id].append(history_entry)
+                    if len(engine_state._health_history[target_id]) > engine_state._max_history:
+                        engine_state._health_history[target_id] = \
+                            engine_state._health_history[target_id][-engine_state._max_history:]
+
+                    engine_state.scan_count += 1
+
+                    # 计算趋势（对比最近 5 次扫描）
+                    trend = "stable"
+                    history = engine_state._health_history[target_id]
+                    if len(history) >= 3:
+                        recent = [h["health_score"] for h in history[-5:]]
+                        diff = recent[-1] - recent[0]
+                        if diff > 0.05:
+                            trend = "improving"
+                        elif diff < -0.05:
+                            trend = "degrading"
+
+                    await broadcaster.broadcast(json.dumps({
+                        "level": "INFO" if health_score >= threshold else "WARNING",
+                        "source": "soma",
+                        "message": (
+                            f"[{target['name']}] Health: {health_score:.2f} "
+                            f"({health_status}) trend={trend}"
+                        ),
+                        "data": {
+                            "target_id": target_id,
+                            "target_name": target["name"],
+                            "health_score": health_score,
+                            "health_status": health_status,
+                            "trend": trend,
+                            "threshold": threshold,
+                        },
+                        "timestamp": datetime.now().isoformat()
+                    }))
+
+                    # 记录到 Mnemosyne
+                    try:
+                        if engine_state._mnemosyne:
+                            event = Event(
+                                event_id=f"DAEMON-{tick_id}-{target_id[:8]}",
+                                timestamp=datetime.now().isoformat() + "Z",
+                                agent="Soma-Dev",
+                                event_type="TICK",
+                                payload={
+                                    "target_id": target_id,
+                                    "target_name": target["name"],
+                                    "health_score": health_score,
+                                    "health_status": health_status,
+                                    "trend": trend,
+                                    "tick": tick_id,
+                                }
+                            )
+                            engine_state._mnemosyne.log_event(event)
+                    except Exception:
+                        pass
+
+                    # 健康度低于阈值 → 触发自愈
+                    if health_score < threshold and auto_repair:
+                        await broadcaster.broadcast(json.dumps({
+                            "level": "ERROR", "source": "daemon",
+                            "message": (
+                                f"[{target['name']}] Health {health_score:.2f} < "
+                                f"threshold {threshold}! Triggering auto-repair..."
+                            ),
+                            "data": {
+                                "target_id": target_id,
+                                "target_name": target["name"],
+                                "health_score": health_score,
+                                "threshold": threshold,
+                            },
+                            "timestamp": datetime.now().isoformat()
+                        }))
+
+                        # 异步触发自愈
+                        repair_task_id = f"AUTO-{tick_id}-{target_id[:8]}"
+                        engine_state.repair_tasks[repair_task_id] = {
+                            "task_id": repair_task_id,
+                            "target_id": target_id,
+                            "target_name": target["name"],
+                            "status": "running",
+                            "trigger": "daemon_auto",
+                            "health_score": health_score,
+                            "created_at": datetime.now().isoformat(),
+                            "result": None,
+                        }
+
+                        # 后台执行自愈（不阻塞扫描循环）
+                        asyncio.create_task(
+                            _daemon_auto_repair(repair_task_id, target_id, target, report),
+                            name=f"repair-{repair_task_id}"
+                        )
+
+                except Exception as e:
+                    logger.error(f"Daemon scan failed for {target['name']}: {e}")
+                    await broadcaster.broadcast(json.dumps({
+                        "level": "ERROR", "source": "daemon",
+                        "message": f"[{target['name']}] Scan error: {str(e)}",
+                        "timestamp": datetime.now().isoformat()
+                    }))
+
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Daemon tick error: {e}")
+            import traceback
+            traceback.print_exc()
+
+        # 等待下一个 tick
+        try:
+            await asyncio.wait_for(
+                asyncio.Event().wait(),
+                timeout=engine_state.daemon_interval
+            )
+        except asyncio.TimeoutError:
+            pass
+        except asyncio.CancelledError:
+            break
+
+
+async def _daemon_auto_repair(
+    task_id: str,
+    target_id: str,
+    target: dict,
+    soma_report: dict
+):
+    """Daemon 触发的自动自愈流程"""
+    from src.protocol.oacp import SignalMessage, DamageType, Priority
+    from src.agents.message_bus import MessageBus
+    from src.agents.mnemosyne_dev import Event
+
+    try:
+        health_score = soma_report["health_score"]
+
+        # 1. 创建 SIGNAL
+        signal = SignalMessage.create(
+            damage_type=DamageType.CODE_DECAY,
+            severity=Priority.P0 if health_score < 0.5 else Priority.P1,
+            location=f"target:{target['name']}",
+            symptoms=[f"Health score {health_score:.2f}"],
+            health_score=health_score,
+        )
+        signal.payload["soma_report"] = soma_report
+        signal.payload["issues"] = soma_report.get("issues", [])
+        signal.payload["target_id"] = target_id
+        signal.payload["target_name"] = target["name"]
+
+        await broadcaster.broadcast(json.dumps({
+            "level": "INFO", "source": "daemon",
+            "message": f"[{target['name']}] SIGNAL sent to Plasticus",
+            "timestamp": datetime.now().isoformat()
+        }))
+
+        # 2. 启动消息总线执行自愈链路
+        bus = MessageBus()
+        bus.register("Plasticus-Dev", _make_plasticus_handler(task_id, target))
+        bus.register("Effector-Dev", _make_effector_handler(task_id, target))
+        bus.register("Mnemosyne-Dev", _make_mnemosyne_handler(task_id, target))
+        await bus.start()
+
+        await bus.send(signal)
+
+        # 等待总线处理完成（最多 120 秒）
+        for _ in range(120):
+            pending = sum(q.qsize() for q in bus._mailboxes.values())
+            if pending == 0:
+                await asyncio.sleep(1)
+                pending = sum(q.qsize() for q in bus._mailboxes.values())
+                if pending == 0:
+                    break
+            await asyncio.sleep(1)
+
+        await bus.stop()
+
+        # 3. 扫描修复后健康度
+        from src.agents.soma_dev import SomaDev
+        scanner = SomaDev(project_path=target["path"])
+        new_report = scanner.scan_codebase()
+        new_health = new_report["health_score"]
+
+        status = "success" if new_health >= target.get("health_threshold", 0.7) else "partial"
+        engine_state.repair_count += 1
+
+        engine_state.repair_tasks[task_id].update({
+            "status": status,
+            "health_after": new_health,
+            "health_before": health_score,
+            "completed_at": datetime.now().isoformat(),
+            "result": {
+                "status": status,
+                "health_before": health_score,
+                "health_after": new_health,
+                "improvement": new_health - health_score,
+            }
+        })
+
+        await broadcaster.broadcast(json.dumps({
+            "level": "INFO" if status == "success" else "WARNING",
+            "source": "daemon",
+            "message": (
+                f"[{target['name']}] Auto-repair {status}: "
+                f"{health_score:.2f} → {new_health:.2f}"
+            ),
+            "data": {
+                "task_id": task_id,
+                "target_name": target["name"],
+                "status": status,
+                "health_before": health_score,
+                "health_after": new_health,
+            },
+            "timestamp": datetime.now().isoformat()
+        }))
+
+    except Exception as e:
+        logger.error(f"Auto-repair failed for {task_id}: {e}")
+        engine_state.repair_tasks[task_id].update({
+            "status": "failed",
+            "completed_at": datetime.now().isoformat(),
+            "result": {"error": str(e)}
+        })
+        await broadcaster.broadcast(json.dumps({
+            "level": "ERROR", "source": "daemon",
+            "message": f"[{target['name']}] Auto-repair failed: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }))
+
+
+def _make_plasticus_handler(task_id, target):
+    """创建 Plasticus 信号处理器（闭包）"""
+    async def handler(message):
+        try:
+            from src.protocol.oacp import BlueprintMessage
+            payload = message.payload
+
+            plans = engine_state.plasticus.generate_plans(
+                damage_type=payload.get("damage_type", "CODE_DECAY"),
+                location=payload.get("location", "unknown"),
+                symptoms=payload.get("symptoms", []),
+                health_score=payload.get("health_score", 0.0),
+                use_llm=True,
+                use_multi_sample=False,
+            )
+
+            if not plans:
+                await broadcaster.broadcast(json.dumps({
+                    "level": "WARNING", "source": "daemon",
+                    "message": f"[{target['name']}] No repair plans generated",
+                    "timestamp": datetime.now().isoformat()
+                }))
+                return None
+
+            best = engine_state.plasticus.evaluate_plans(plans)
+            blueprint = BlueprintMessage.create(
+                plan_id=task_id,
+                strategy=best.name,
+                steps=[
+                    {
+                        "number": i + 1,
+                        "name": s.get("name", s.get("description", f"Step {i+1}")),
+                        "description": s.get("description", ""),
+                        "action": s.get("description", f"Step {i+1}"),
+                        "type": s.get("type", "generic"),
+                        "file_path": s.get("file_path"),
+                        "content": s.get("content"),
+                    }
+                    for i, s in enumerate(best.steps)
+                ],
+                estimated_downtime=f"{best.downtime_seconds}s",
+                success_rate_prediction=best.historical_success_rate,
+                rollback_plan="Revert changes",
+            )
+
+            await broadcaster.broadcast(json.dumps({
+                "level": "INFO", "source": "daemon",
+                "message": (
+                    f"[{target['name']}] Blueprint generated: "
+                    f"{best.name} ({len(best.steps)} steps, "
+                    f"success rate {best.historical_success_rate*100:.0f}%)"
+                ),
+                "timestamp": datetime.now().isoformat()
+            }))
+
+            return blueprint
+        except Exception as e:
+            await broadcaster.broadcast(json.dumps({
+                "level": "ERROR", "source": "daemon",
+                "message": f"[{target['name']}] Plasticus error: {str(e)}",
+                "timestamp": datetime.now().isoformat()
+            }))
+            return None
+    return handler
+
+
+def _make_effector_handler(task_id, target):
+    """创建 Effector 蓝图处理器（闭包）"""
+    async def handler(message):
+        try:
+            from src.protocol.oacp import ExecutionReportMessage
+
+            os.environ["EFFECTOR_AUTO_APPROVE"] = "true"
+            report = engine_state.effector.execute_blueprint(message)
+
+            await broadcaster.broadcast(json.dumps({
+                "level": "INFO", "source": "daemon",
+                "message": (
+                    f"[{target['name']}] Effector executed: "
+                    f"{report.payload.get('status', 'unknown')}"
+                ),
+                "timestamp": datetime.now().isoformat()
+            }))
+
+            return report
+        except Exception as e:
+            await broadcaster.broadcast(json.dumps({
+                "level": "ERROR", "source": "daemon",
+                "message": f"[{target['name']}] Effector error: {str(e)}",
+                "timestamp": datetime.now().isoformat()
+            }))
+            return ExecutionReportMessage.create(
+                plan_id=task_id,
+                status="failed",
+                steps_completed=0,
+                steps_total=0,
+                errors=[str(e)],
+            )
+    return handler
+
+
+def _make_mnemosyne_handler(task_id, target):
+    """创建 Mnemosyne 报告处理器（闭包）"""
+    async def handler(message):
+        try:
+            from src.agents.mnemosyne_dev import Event
+            payload = message.payload
+
+            event = Event(
+                event_id=f"REPAIR-{task_id}",
+                timestamp=datetime.now().isoformat() + "Z",
+                agent="Effector-Dev",
+                event_type="EXECUTION_REPORT",
+                payload={
+                    "task_id": task_id,
+                    "target_id": target.get("target_id"),
+                    "target_name": target.get("name"),
+                    "status": payload.get("status"),
+                    "steps_completed": payload.get("steps_completed"),
+                    "steps_total": payload.get("steps_total"),
+                    "errors": payload.get("errors", []),
+                }
+            )
+            engine_state.mnemosyne.log_event(event)
+        except Exception:
+            pass
+        return None
+    return handler
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Daemon Control API
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/daemon")
+async def get_daemon_status():
+    """获取 Daemon 监控状态"""
+    return {
+        "running": engine_state.daemon_running,
+        "interval": engine_state.daemon_interval,
+        "last_tick": engine_state.daemon_last_tick,
+        "tick_count": engine_state.daemon_tick_count,
+        "targets_monitored": sum(
+            1 for t in _targets_store.values() if t.get("status") == "active"
+        ),
+        "health_history": {
+            tid: {
+                "current": hist[-1] if hist else None,
+                "trend": _calc_trend(hist) if len(hist) >= 2 else "unknown",
+                "count": len(hist),
+            }
+            for tid, hist in engine_state._health_history.items()
+        },
+    }
+
+
+@app.post("/api/daemon/interval")
+async def set_daemon_interval(interval: int = 60):
+    """设置 Daemon 扫描间隔（秒）"""
+    if interval < 10:
+        raise HTTPException(status_code=400, detail="Interval must be >= 10 seconds")
+    if interval > 3600:
+        raise HTTPException(status_code=400, detail="Interval must be <= 3600 seconds")
+    engine_state.daemon_interval = interval
+    logger.info(f"Daemon interval changed to {interval}s")
+    return {"status": "ok", "interval": interval}
+
+
+def _calc_trend(history: List[Dict]) -> str:
+    """计算健康度趋势"""
+    if len(history) < 2:
+        return "unknown"
+    recent = [h["health_score"] for h in history[-5:]]
+    diff = recent[-1] - recent[0]
+    if diff > 0.05:
+        return "improving"
+    elif diff < -0.05:
+        return "degrading"
+    return "stable"
 
 
 # 内存中的目标列表（产品化后应持久化到数据库）

@@ -1038,6 +1038,29 @@ main {
         <div class="stat-label" id="stat-llm-model">glm-4.7-flash</div>
       </div>
 
+      <!-- Daemon Status -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon icon-green">📡</span> Daemon Monitor</div>
+          <span class="badge" id="daemon-badge" style="background:rgba(0,232,123,0.15);color:var(--accent-green);">RUNNING</span>
+        </div>
+        <div style="display:flex;gap:20px;align-items:center;">
+          <div>
+            <div class="stat-value" id="daemon-ticks">0</div>
+            <div class="stat-label">Ticks</div>
+          </div>
+          <div>
+            <div class="stat-value" id="daemon-targets" style="font-size:1.2rem;">0</div>
+            <div class="stat-label">Targets</div>
+          </div>
+          <div>
+            <div class="stat-value" id="daemon-interval" style="font-size:1.2rem;">60s</div>
+            <div class="stat-label">Interval</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:0.78rem;color:var(--text-muted);" id="daemon-last-tick">Last tick: --</div>
+      </div>
+
       <!-- Health Ring -->
       <div class="card">
         <div class="card-header">
@@ -1575,19 +1598,25 @@ async function loadTargets() {
       const healthColor = t.last_health == null ? 'var(--text-muted)' :
         t.last_health >= 0.7 ? 'var(--success)' :
         t.last_health >= 0.5 ? 'var(--warning)' : 'var(--danger)';
+      const autoBadge = t.auto_repair
+        ? '<span style="font-size:0.7rem;padding:1px 6px;border-radius:4px;background:rgba(0,232,123,0.15);color:var(--accent-green);margin-left:6px;">AUTO</span>'
+        : '';
 
       list.innerHTML += `
-        <div class="target-item">
+        <div class="target-item" data-target-id="${t.target_id}">
           <div class="target-info">
-            <div class="target-name">${t.name}</div>
+            <div class="target-name">${t.name}${autoBadge}</div>
             <div class="target-path">${t.path}</div>
-            <div class="target-health" style="color:${healthColor}">
-              ${t.last_health != null ? `Health: ${(t.last_health * 100).toFixed(0)}%` : 'Not yet scanned'}
+            <div style="display:flex;gap:12px;align-items:center;">
+              <div class="target-health" style="color:${healthColor}">
+                ${t.last_health != null ? `Health: ${(t.last_health * 100).toFixed(0)}%` : 'Not yet scanned'}
+              </div>
+              <div class="target-trend" style="font-size:0.75rem;">--</div>
             </div>
           </div>
           <div class="target-actions">
-            <button class="btn btn-sm" onclick="scanTarget('${t.target_id}')">🔍</button>
-            <button class="btn btn-sm btn-danger" onclick="removeTarget('${t.target_id}')">✕</button>
+            <button class="btn btn-sm" onclick="scanTarget('${t.target_id}')" title="Scan now">🔍</button>
+            <button class="btn btn-sm btn-danger" onclick="removeTarget('${t.target_id}')" title="Remove target">✕</button>
           </div>
         </div>`;
     }
@@ -1819,12 +1848,60 @@ thresholdSlider.addEventListener('input', () => {
 });
 
 // ============================================================================
+// DAEMON STATUS
+// ============================================================================
+async function pollDaemon() {
+  try {
+    const data = await api('/api/daemon');
+    document.getElementById('daemon-badge').textContent = data.running ? 'RUNNING' : 'STOPPED';
+    document.getElementById('daemon-badge').style.background = data.running
+      ? 'rgba(0,232,123,0.15)' : 'rgba(239,68,68,0.15)';
+    document.getElementById('daemon-badge').style.color = data.running
+      ? 'var(--accent-green)' : 'var(--accent-red)';
+    document.getElementById('daemon-ticks').textContent = data.tick_count;
+    document.getElementById('daemon-targets').textContent = data.targets_monitored;
+    document.getElementById('daemon-interval').textContent = data.interval + 's';
+    document.getElementById('daemon-last-tick').textContent = 'Last tick: ' + (data.last_tick ? formatTime(data.last_tick) : '--');
+
+    // Update health trends for each target
+    if (data.health_history) {
+      for (const [tid, info] of Object.entries(data.health_history)) {
+        if (info.current) {
+          const targetEl = document.querySelector(`[data-target-id="${tid}"]`);
+          if (targetEl) {
+            const trendEl = targetEl.querySelector('.target-trend');
+            if (trendEl) {
+              const trendColors = { improving: 'var(--accent-green)', degrading: 'var(--accent-red)', stable: 'var(--accent-amber)', unknown: 'var(--text-muted)' };
+              const trendIcons = { improving: '📈', degrading: '📉', stable: '➡️', unknown: '❓' };
+              trendEl.textContent = (trendIcons[info.trend] || '') + ' ' + info.trend;
+              trendEl.style.color = trendColors[info.trend] || 'var(--text-muted)';
+            }
+            const healthEl = targetEl.querySelector('.target-health');
+            if (healthEl) {
+              healthEl.textContent = (info.current.health_score * 100).toFixed(0) + '%';
+              const hc = info.current.health_score >= 0.8 ? 'var(--accent-green)' : info.current.health_score >= 0.7 ? 'var(--accent-amber)' : 'var(--accent-red)';
+              healthEl.style.color = hc;
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to poll daemon:', e);
+  }
+}
+
+// ============================================================================
 // INIT
 // ============================================================================
 async function init() {
   // Poll status every 5s
   pollStatus();
   setInterval(pollStatus, 5000);
+
+  // Poll daemon every 5s
+  pollDaemon();
+  setInterval(pollDaemon, 5000);
 
   // Load data
   await Promise.all([
