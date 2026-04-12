@@ -1,0 +1,45 @@
+[project]
+name = "axonewt-engine"
+version = "0.1.0"
+description = "火蜥蜴再生 AI Agent 框架 - 7S 管理 + 四象限决策"
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Axonewt Team", email = "team@axonewt.dev"}
+]
+keywords = ["ai", "agent", "autonomous", "self-healing", "7s-framework"]
+
+dependencies = [
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "pydantic>=2.5.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+    "ollama>=0.1.0",
+    "openai>=1.12.0",
+    "chromadb>=0.4.22",
+    "numpy>=1.26.0",
+    "psutil>=5.9.0",
+]
+
+[project.optional-dependencies]
+voice = ["pyaudio>=0.2.14", "edge-tts>=7.0.0"]
+mcp = ["mcp[cli]>=1.0.0"]
+dev = ["pytest>=7.4.0", "pytest-asyncio>=0.23.0", "ruff>=0.2.0"]
+all = ["axonewt-engine[voice,mcp,dev]"]
+
+[project.scripts]
+axonewt = "axonewt.cli:main"
+axonewt-doctor = "axonewt.cli:doctor"
+axonewt-scan = "axonewt.cli:scan"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/axonewt"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/", "README.md", "LICENSE"]
