@@ -1,45 +1,111 @@
 [project]
 name = "axonewt-engine"
-version = "0.1.0"
-description = "火蜥蜴再生 AI Agent 框架 - 7S 管理 + 四象限决策"
-requires-python = ">=3.11"
+version = "0.3.0"
+description = "🦎 火蜥蜴再生 AI Agent 框架 - 开源、通用、自进化"
 readme = "README.md"
 license = {text = "MIT"}
+requires-python = ">=3.11"
 authors = [
     {name = "Axonewt Team", email = "team@axonewt.dev"}
 ]
-keywords = ["ai", "agent", "autonomous", "self-healing", "7s-framework"]
+keywords = ["ai", "agent", "autonomous", "self-healing", "quantitative-trading"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
 
 dependencies = [
+    # Core
     "typer>=0.12.0",
     "rich>=13.7.0",
     "pydantic>=2.5.0",
-    "httpx>=0.27.0",
     "python-dotenv>=1.0.0",
+    "PyYAML>=6.0",
+
+    # Web
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "starlette>=0.36.0",
+
+    # HTTP
+    "httpx>=0.27.0",
+    "requests>=2.31.0",
+
+    # Database
+    "aiosqlite>=0.19.0",
+
+    # LLM
     "ollama>=0.1.0",
     "openai>=1.12.0",
-    "chromadb>=0.4.22",
-    "numpy>=1.26.0",
+
+    # Logging
+    "loguru>=0.7.0",
+
+    # Utilities
+    "tenacity>=8.2.0",
     "psutil>=5.9.0",
 ]
 
 [project.optional-dependencies]
-voice = ["pyaudio>=0.2.14", "edge-tts>=7.0.0"]
-mcp = ["mcp[cli]>=1.0.0"]
-dev = ["pytest>=7.4.0", "pytest-asyncio>=0.23.0", "ruff>=0.2.0"]
-all = ["axonewt-engine[voice,mcp,dev]"]
+voice = [
+    "pyaudio>=0.2.14",
+    "edge-tts>=7.0.0",
+    "websockets>=12.0",
+]
+mcp = [
+    "mcp[cli]>=1.0.0",
+    "mcp[server]>=1.0.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+    "types-PyYAML>=6.0.0",
+    "types-requests>=2.31.0",
+]
+all = [
+    "axonewt-engine[voice,mcp,dev]",
+]
 
 [project.scripts]
-axonewt = "axonewt.cli:main"
-axonewt-doctor = "axonewt.cli:doctor"
-axonewt-scan = "axonewt.cli:scan"
+axonewt = "src.axonewt.cli:main"
+axonewt-doctor = "src.axonewt.cli:doctor"
+axonewt-scan = "src.axonewt.cli:scan"
+axonewt-repair = "src.axonewt.cli:repair"
+axonewt-monitor = "src.axonewt.cli:monitor"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/axonewt"]
+packages = ["src/axonewt", "src/agents", "src/api", "src/models", "src/integrations", "src/memory", "src/protocol", "src/skills", "src/tools"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/", "README.md", "LICENSE"]
+include = ["src/", "README.md", "LICENSE", "docs/", "config.yaml"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+strict = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
