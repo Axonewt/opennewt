@@ -1,320 +1,49 @@
-"""
-Axonewt Tools Registry
-======================
+# Axonewt Tools — 统一工具注册表
 
-工具注册表 - 集中管理所有可用工具。
-参考 Hermes Agent 的 tools/registry.py 设计。
-
-工具分类：
-- 文件工具（read_file, write_to_file, search_content）
-- 终端工具（execute_command）
-- Web 工具（web_search, web_fetch）
-- 代码工具（grep, patch, diff）
-
-每个工具在 tools/ 目录下有独立的 .py 文件，
-通过 registry.register() 自动注册。
-"""
-
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass, field
-import json
+def _load_tools(module, name):
+    """从模块加载 TOOLS dict，不存在则尝试加载函数"""
+    if hasattr(module, "TOOLS"):
+        return getattr(module, "TOOLS")
+    # 回退：收集模块中所有函数
+    tools = {}
+    for attr_name in dir(module):
+        if attr_name.startswith("_"):
+            continue
+        attr = getattr(module, attr_name)
+        if callable(attr) and not attr_name.startswith("__"):
+            tools[attr_name] = {"fn": attr, "desc": attr.__doc__ or attr_name}
+    return tools
 
 
-@dataclass
-class Tool:
-    """工具定义"""
-    name: str
-    description: str
-    category: str = "generic"
-    parameters: Dict[str, Any] = field(default_factory=dict)
-    handler: Optional[Callable] = None
-    enabled: bool = True
+from . import browser_tool
+from . import code_tool
+from . import filesystem_tool
+from . import github_tool
+from . import memory_tool
+from . import terminal_tool
 
-    def to_schema(self) -> Dict[str, Any]:
-        """生成 MCP 工具 schema"""
-        return {
-            "name": self.name,
-            "description": self.description,
-            "inputSchema": {
-                "type": "object",
-                "properties": self.parameters,
-            }
-        }
+_ALL_TOOLS = {}
+_ALL_TOOLS.update(_load_tools(browser_tool, "browser"))
+_ALL_TOOLS.update(_load_tools(code_tool, "code"))
+_ALL_TOOLS.update(_load_tools(filesystem_tool, "filesystem"))
+_ALL_TOOLS.update(_load_tools(github_tool, "github"))
+_ALL_TOOLS.update(_load_tools(memory_tool, "memory"))
+_ALL_TOOLS.update(_load_tools(terminal_tool, "terminal"))
+
+# 兼容旧 API
+ALL_TOOLS = _ALL_TOOLS
 
 
-class ToolRegistry:
-    """工具注册表"""
-
-    def __init__(self):
-        self.tools: Dict[str, Tool] = {}
-        self.categories: Dict[str, List[str]] = {}
-
-    def register(self, tool: Tool):
-        """注册工具"""
-        self.tools[tool.name] = tool
-        if tool.category not in self.categories:
-            self.categories[tool.category] = []
-        if tool.name not in self.categories[tool.category]:
-            self.categories[tool.category].append(tool.name)
-
-    def get(self, name: str) -> Optional[Tool]:
-        """获取工具"""
-        return self.tools.get(name)
-
-    def list_all(self) -> List[Tool]:
-        """列出所有工具"""
-        return list(self.tools.values())
-
-    def list_by_category(self, category: str) -> List[Tool]:
-        """按类别列出工具"""
-        names = self.categories.get(category, [])
-        return [self.tools[n] for n in names if n in self.tools]
-
-    def get_schemas(self) -> List[Dict]:
-        """获取所有工具的 MCP schema"""
-        return [t.to_schema() for t in self.tools.values() if t.enabled]
-
-    def enable(self, name: str):
-        """启用工具"""
-        if name in self.tools:
-            self.tools[name].enabled = True
-
-    def disable(self, name: str):
-        """禁用工具"""
-        if name in self.tools:
-            self.tools[name].enabled = False
-
-    def get_stats(self) -> Dict[str, Any]:
-        """获取统计信息"""
-        return {
-            "total_tools": len(self.tools),
-            "enabled_tools": sum(1 for t in self.tools.values() if t.enabled),
-            "categories": list(self.categories.keys()),
-            "tools_by_category": {
-                cat: len(names) for cat, names in self.categories.items()
-            }
-        }
+def get_tool(name: str):
+    return ALL_TOOLS.get(name)
 
 
-# ============================================================================
-# 工具实现
-# ============================================================================
-
-async def read_file_handler(path: str, encoding: str = "utf-8") -> str:
-    """读取文件内容"""
-    from pathlib import Path
-    p = Path(path)
-    if not p.exists():
-        return f"Error: File not found: {path}"
-    try:
-        return p.read_text(encoding=encoding)
-    except Exception as e:
-        return f"Error reading {path}: {e}"
+def list_tools() -> list[str]:
+    return sorted(ALL_TOOLS.keys())
 
 
-async def write_file_handler(path: str, content: str, encoding: str = "utf-8") -> str:
-    """写入文件内容"""
-    from pathlib import Path
-    p = Path(path)
-    try:
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content, encoding=encoding)
-        return f"Success: Written to {path}"
-    except Exception as e:
-        return f"Error writing {path}: {e}"
+def tool_count() -> int:
+    return len(ALL_TOOLS)
 
 
-async def search_handler(query: str, path: str = ".", pattern: str = None) -> str:
-    """搜索文件内容"""
-    import subprocess
-    try:
-        args = ["grep", "-rn", query, path]
-        if pattern:
-            args.extend(["--include", pattern])
-        result = subprocess.run(args, capture_output=True, text=True, timeout=30)
-        if result.stdout:
-            return result.stdout
-        else:
-            return "No matches found"
-    except Exception as e:
-        return f"Error searching: {e}"
-
-
-async def list_dir_handler(path: str = ".") -> str:
-    """列出目录内容"""
-    from pathlib import Path
-    try:
-        items = list(Path(path).iterdir())
-        lines = [f"{'📁' if i.is_dir() else '📄'} {i.name}" for i in items]
-        return "\n".join(lines) if lines else "(empty)"
-    except Exception as e:
-        return f"Error listing {path}: {e}"
-
-
-# ============================================================================
-# 默认注册表实例
-# ============================================================================
-
-_default_registry: Optional[ToolRegistry] = None
-
-
-def get_tool_registry() -> ToolRegistry:
-    """获取工具注册表（单例）"""
-    global _default_registry
-    if _default_registry is None:
-        _default_registry = ToolRegistry()
-        _register_default_tools(_default_registry)
-    return _default_registry
-
-
-def _register_default_tools(registry: ToolRegistry):
-    """注册默认工具"""
-
-    # 导入其他工具
-    try:
-        from .browser_tool import web_search, web_fetch
-        from .terminal_tool import execute_command_handler, git_handler
-        from .github_tool import github_api, github_search_repos, github_get_repo, github_list_issues
-    except ImportError:
-        web_search = web_fetch = execute_command_handler = git_handler = None
-        github_api = github_search_repos = github_get_repo = github_list_issues = None
-
-    # 文件工具
-    registry.register(Tool(
-        name="read_file",
-        description="读取文件内容，支持指定编码",
-        category="file",
-        parameters={
-            "path": {"type": "string", "description": "文件路径"},
-            "encoding": {"type": "string", "description": "编码，默认 utf-8", "default": "utf-8"},
-        },
-        handler=read_file_handler,
-    ))
-
-    registry.register(Tool(
-        name="write_file",
-        description="写入文件内容，自动创建目录",
-        category="file",
-        parameters={
-            "path": {"type": "string", "description": "文件路径"},
-            "content": {"type": "string", "description": "文件内容"},
-            "encoding": {"type": "string", "description": "编码，默认 utf-8", "default": "utf-8"},
-        },
-        handler=write_file_handler,
-    ))
-
-    registry.register(Tool(
-        name="search_content",
-        description="在文件中搜索内容（grep）",
-        category="file",
-        parameters={
-            "query": {"type": "string", "description": "搜索关键词"},
-            "path": {"type": "string", "description": "搜索路径，默认 ."},
-            "pattern": {"type": "string", "description": "文件模式，如 *.py"},
-        },
-        handler=search_handler,
-    ))
-
-    registry.register(Tool(
-        name="list_dir",
-        description="列出目录内容",
-        category="file",
-        parameters={
-            "path": {"type": "string", "description": "目录路径，默认 ."},
-        },
-        handler=list_dir_handler,
-    ))
-
-    # Web 工具
-    if web_search:
-        registry.register(Tool(
-            name="web_search",
-            description="搜索网页，返回搜索结果摘要",
-            category="web",
-            parameters={
-                "query": {"type": "string", "description": "搜索关键词"},
-                "max_results": {"type": "integer", "description": "最大结果数，默认 5", "default": 5},
-            },
-            handler=web_search,
-        ))
-
-        registry.register(Tool(
-            name="web_fetch",
-            description="获取网页内容并提取正文",
-            category="web",
-            parameters={
-                "url": {"type": "string", "description": "网页 URL"},
-                "max_length": {"type": "integer", "description": "最大字符数，默认 5000", "default": 5000},
-            },
-            handler=web_fetch,
-        ))
-
-    # 终端工具
-    if execute_command_handler:
-        registry.register(Tool(
-            name="execute_command",
-            description="执行终端命令",
-            category="system",
-            parameters={
-                "command": {"type": "string", "description": "要执行的命令"},
-                "cwd": {"type": "string", "description": "工作目录，默认 .", "default": "."},
-                "timeout": {"type": "integer", "description": "超时秒数，默认 60", "default": 60},
-                "env": {"type": "string", "description": "环境变量（JSON格式）"},
-            },
-            handler=execute_command_handler,
-        ))
-
-        registry.register(Tool(
-            name="git",
-            description="执行 Git 命令",
-            category="system",
-            parameters={
-                "command": {"type": "string", "description": "git 子命令（如 status, log --oneline -5）"},
-                "cwd": {"type": "string", "description": "仓库目录，默认 .", "default": "."},
-            },
-            handler=git_handler,
-        ))
-
-    # GitHub 工具
-    if github_search_repos:
-        registry.register(Tool(
-            name="github_search_repos",
-            description="搜索 GitHub 仓库",
-            category="github",
-            parameters={
-                "query": {"type": "string", "description": "搜索关键词"},
-            },
-            handler=github_search_repos,
-        ))
-
-        registry.register(Tool(
-            name="github_get_repo",
-            description="获取 GitHub 仓库信息",
-            category="github",
-            parameters={
-                "owner": {"type": "string", "description": "仓库所有者"},
-                "repo": {"type": "string", "description": "仓库名"},
-            },
-            handler=github_get_repo,
-        ))
-
-        registry.register(Tool(
-            name="github_list_issues",
-            description="列出 GitHub 仓库的 Issues",
-            category="github",
-            parameters={
-                "owner": {"type": "string", "description": "仓库所有者"},
-                "repo": {"type": "string", "description": "仓库名"},
-                "state": {"type": "string", "description": "open/closed/all，默认 open", "default": "open"},
-            },
-            handler=github_list_issues,
-        ))
-
-
-# 快捷函数
-def list_all_tools() -> List[Tool]:
-    return get_tool_registry().list_all()
-
-
-def get_tool_schemas() -> List[Dict]:
-    return get_tool_registry().get_schemas()
+__all__ = ["ALL_TOOLS", "get_tool", "list_tools", "tool_count"]
