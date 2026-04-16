@@ -466,6 +466,92 @@ def run_setup() -> SetupConfig:
     return config
 
 
+class SetupWizard:
+    """交互式安装向导主类"""
+
+    def __init__(self, non_interactive: bool = False):
+        self.non_interactive = non_interactive
+        self.config = SetupConfig()
+        self.env = {}
+        self.steps = []
+
+    def check_environment(self) -> Dict[str, Any]:
+        """步骤1：检测环境"""
+        print_step(1, 5, "检测环境")
+        self.env = detect_environment()
+        return self.env
+
+    def install_dependencies(self) -> bool:
+        """步骤2：安装依赖"""
+        print_step(2, 5, "安装依赖")
+        return setup_dependencies()
+
+    def configure_llm(self) -> SetupConfig:
+        """步骤3：配置 LLM 提供商"""
+        print_step(3, 5, "配置 LLM 提供商")
+        return run_setup.__wrapped__() if hasattr(run_setup, '__wrapped__') else self._configure_llm_interactive()
+
+    def _configure_llm_interactive(self) -> SetupConfig:
+        """LLM 配置交互逻辑"""
+        providers = []
+        defaults_list = []
+        if self.env.get("ollama_available"):
+            providers.append("Ollama（本地，推荐）")
+            defaults_list.append("ollama")
+        if self.env.get("openai_available") or self.env.get("deepseek_available"):
+            providers.append("OpenAI / DeepSeek（云端）")
+            defaults_list.append("openai")
+        providers.append("WorkBuddy（内置，无需配置）")
+        defaults_list.append("workbuddy")
+        default_idx = defaults_list.index("ollama") if "ollama" in defaults_list else defaults_list.index("openai") if "openai" in defaults_list else 0
+        choice = input_choice("选择 LLM 提供商", providers, default_idx)
+        if choice == 0 and "ollama" in defaults_list:
+            self.config.llm_provider = "ollama"
+        elif choice == 1 and len(providers) > 2:
+            self.config.llm_provider = "openai"
+        else:
+            self.config.llm_provider = "workbuddy"
+        if self.config.llm_provider == "ollama":
+            if self.env.get("ollama_models"):
+                model_options = [m["name"] for m in self.env["ollama_models"]]
+                model_choice = input_choice("选择模型", model_options, 0)
+                self.config.llm_model = model_options[model_choice]
+            else:
+                self.config.llm_model = input_text("输入模型名称", "qwen2.5:7b")
+            self.config.llm_api_base = "http://localhost:11434/v1"
+        elif self.config.llm_provider in ("openai", "deepseek"):
+            self.config.llm_model = input_text("输入模型名称", "gpt-4o-mini")
+            self.config.llm_api_key = input_text("输入 API Key", password=True)
+        elif self.config.llm_provider == "claude":
+            self.config.llm_model = "claude-3-5-sonnet"
+        return self.config
+
+    def init_database(self) -> bool:
+        """步骤4：初始化数据库"""
+        print_step(4, 5, "初始化数据库和目录")
+        return setup_database(self.config)
+
+    def verify_and_save(self) -> bool:
+        """步骤5：验证并保存"""
+        print_step(5, 5, "验证安装并写入配置")
+        write_config(self.config)
+        return verify_installation(self.config)
+
+    def run(self) -> SetupConfig:
+        """运行完整安装流程"""
+        print_banner()
+        self.check_environment()
+        self.install_dependencies()
+        self.configure_llm()
+        self.init_database()
+        self.verify_and_save()
+        return self.config
+
+
+__all__ = ["SetupConfig", "SetupWizard", "Colors", "run_setup", "detect_environment",
+           "print_banner", "print_success", "print_warning", "print_error", "print_info"]
+
+
 if __name__ == "__main__":
     try:
         run_setup()

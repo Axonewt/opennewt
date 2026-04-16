@@ -45,7 +45,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.memory.engine import QuadMemoryEngine
 from src.skills import SkillRegistry
-from src.tools import ToolRegistry, get_tool_registry
+from src.tools import ALL_TOOLS, list_tools, get_tool
 
 CST = timezone(timedelta(hours=8))
 
@@ -387,7 +387,7 @@ class LLMInterface:
 class ToolExecutor:
     """工具调用执行器"""
 
-    def __init__(self, tool_registry: ToolRegistry):
+    def __init__(self, tool_registry=None):
         self.registry = tool_registry
         self._running_tasks: Dict[str, asyncio.Task] = {}
 
@@ -489,7 +489,7 @@ class AxonewtAgent:
         config: Optional[AgentConfig] = None,
         memory_engine: Optional[QuadMemoryEngine] = None,
         skill_registry: Optional[SkillRegistry] = None,
-        tool_registry: Optional[ToolRegistry] = None,
+        tool_registry=None,
         stream_callback=None,
     ):
         self.config = config or AgentConfig()

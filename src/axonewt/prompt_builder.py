@@ -436,7 +436,7 @@ class PromptBuilder:
         if len(history) > len(selected) and len(history) > 0:
             messages.append({
                 "role": "system",
-                content=f"[注意: 对话历史已裁剪，保留了最近的 {len(selected)}/{len(history)} 条消息]",
+                "content": f"[注意: 对话历史已裁剪，保留了最近的 {len(selected)}/{len(history)} 条消息]",
             })
 
         messages.extend(selected)
