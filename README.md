@@ -20,7 +20,10 @@
 | 🎯 **四象限决策** | P0危机干预 / P1战略投资 / P2执行优化 / P3研究探索 |
 | 📊 **7S 管理框架** | 共同价值观 + 战略 + 结构 + 制度 + 风格 + 人员 + 技能 |
 | 🌐 **多 LLM 支持** | Ollama(本地) / OpenAI / DeepSeek，自动检测 |
-| 🔌 **MCP 服务端** | 8个工具暴露给 Claude Desktop / Cursor / Windsurf |
+| 🔌 **MCP 服务端** | 11个工具暴露给 Claude Desktop / Cursor / Windsurf |
+| 🧠 **AIAgent Loop** | 完整对话循环 + 工具调用 + 流式输出 + 记忆自进化 |
+| 🔬 **Deep Research** | 深度研究工具，自动搜索多来源生成结构化报告 |
+| 🧩 **11个内置工具** | read/write/search/list_dir + web_search/fetch + execute_command + git + GitHub API |
 | 📡 **REST API** | 完整 HTTP API + WebSocket 实时日志 |
 | 🐳 **Docker 部署** | 一键 `docker-compose up` |
 
@@ -80,12 +83,14 @@ axonewt doctor
 
 | 命令 | 说明 |
 |------|------|
-| `axonewt` | 交互式对话 |
+| `axonewt` | 交互式对话（基于 AIAgent Loop） |
+| `axonewt setup` | 交互式安装向导（零配置启动） |
 | `axonewt doctor` | 环境自检 |
 | `axonewt scan [path]` | 健康扫描 |
 | `axonewt repair [path]` | 触发自愈 |
 | `axonewt monitor [path]` | 实时监控 |
 | `axonewt ask "问题"` | 单次问答 |
+| `axonewt research "主题"` | 深度研究（Deep Research Tool） |
 | `axonewt stats` | 查看统计 |
 | `axonewt model list` | 列出模型 |
 
@@ -125,7 +130,9 @@ axonewt doctor
 }
 ```
 
-**可用工具:** `scan_health`, `repair`, `register_target`, `list_targets`, `scan_target`, `get_events`, `get_stats`, `get_immune_memory`
+**可用工具:** `scan_health`, `repair`, `register_target`, `list_targets`, `scan_target`, `get_events`, `get_stats`, `get_immune_memory`, `read_file`, `write_file`, `search_content`, `list_dir`, `web_search`, `web_fetch`, `execute_command`, `git`, `github_search_repos`, `github_get_repo`, `github_list_issues`
+
+> MCP 工具列表持续扩充中。
 
 ---
 
@@ -133,6 +140,9 @@ axonewt doctor
 
 | 模块 | 代码行数 | 说明 |
 |------|----------|------|
+| `src/axonewt/agent_loop.py` | 580+ | AIAgent 主循环（工具调用+流式输出+记忆进化） |
+| `src/axonewt/deep_research.py` | 380+ | 深度研究工具（多来源搜索+报告生成） |
+| `src/axonewt/setup_wizard.py` | 450+ | 交互式安装向导（自动检测+零配置） |
 | `src/agents/soma_dev.py` | 738 | 感知层，健康扫描 |
 | `src/agents/plasticus_dev.py` | 920 | 决策层，LLM修复方案生成 |
 | `src/agents/effector_dev.py` | 960 | 执行层，代码修改+回滚 |
@@ -140,6 +150,8 @@ axonewt doctor
 | `src/api/server.py` | 1608 | FastAPI服务器，完整REST API |
 | `src/mcp/__init__.py` | 530+ | MCP服务端，8个工具 |
 | `src/memory/engine.py` | 616 | 四层记忆引擎 |
+| `src/tools/__init__.py` | 280+ | 工具注册表，11个内置工具 |
+| `src/skills/__init__.py` | 150+ | 技能注册表，技能自进化框架 |
 
 ---
 

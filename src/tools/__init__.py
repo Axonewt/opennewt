@@ -170,6 +170,15 @@ def get_tool_registry() -> ToolRegistry:
 def _register_default_tools(registry: ToolRegistry):
     """注册默认工具"""
 
+    # 导入其他工具
+    try:
+        from .browser_tool import web_search, web_fetch
+        from .terminal_tool import execute_command_handler, git_handler
+        from .github_tool import github_api, github_search_repos, github_get_repo, github_list_issues
+    except ImportError:
+        web_search = web_fetch = execute_command_handler = git_handler = None
+        github_api = github_search_repos = github_get_repo = github_list_issues = None
+
     # 文件工具
     registry.register(Tool(
         name="read_file",
@@ -215,6 +224,91 @@ def _register_default_tools(registry: ToolRegistry):
         },
         handler=list_dir_handler,
     ))
+
+    # Web 工具
+    if web_search:
+        registry.register(Tool(
+            name="web_search",
+            description="搜索网页，返回搜索结果摘要",
+            category="web",
+            parameters={
+                "query": {"type": "string", "description": "搜索关键词"},
+                "max_results": {"type": "integer", "description": "最大结果数，默认 5", "default": 5},
+            },
+            handler=web_search,
+        ))
+
+        registry.register(Tool(
+            name="web_fetch",
+            description="获取网页内容并提取正文",
+            category="web",
+            parameters={
+                "url": {"type": "string", "description": "网页 URL"},
+                "max_length": {"type": "integer", "description": "最大字符数，默认 5000", "default": 5000},
+            },
+            handler=web_fetch,
+        ))
+
+    # 终端工具
+    if execute_command_handler:
+        registry.register(Tool(
+            name="execute_command",
+            description="执行终端命令",
+            category="system",
+            parameters={
+                "command": {"type": "string", "description": "要执行的命令"},
+                "cwd": {"type": "string", "description": "工作目录，默认 .", "default": "."},
+                "timeout": {"type": "integer", "description": "超时秒数，默认 60", "default": 60},
+                "env": {"type": "string", "description": "环境变量（JSON格式）"},
+            },
+            handler=execute_command_handler,
+        ))
+
+        registry.register(Tool(
+            name="git",
+            description="执行 Git 命令",
+            category="system",
+            parameters={
+                "command": {"type": "string", "description": "git 子命令（如 status, log --oneline -5）"},
+                "cwd": {"type": "string", "description": "仓库目录，默认 .", "default": "."},
+            },
+            handler=git_handler,
+        ))
+
+    # GitHub 工具
+    if github_search_repos:
+        registry.register(Tool(
+            name="github_search_repos",
+            description="搜索 GitHub 仓库",
+            category="github",
+            parameters={
+                "query": {"type": "string", "description": "搜索关键词"},
+            },
+            handler=github_search_repos,
+        ))
+
+        registry.register(Tool(
+            name="github_get_repo",
+            description="获取 GitHub 仓库信息",
+            category="github",
+            parameters={
+                "owner": {"type": "string", "description": "仓库所有者"},
+                "repo": {"type": "string", "description": "仓库名"},
+            },
+            handler=github_get_repo,
+        ))
+
+        registry.register(Tool(
+            name="github_list_issues",
+            description="列出 GitHub 仓库的 Issues",
+            category="github",
+            parameters={
+                "owner": {"type": "string", "description": "仓库所有者"},
+                "repo": {"type": "string", "description": "仓库名"},
+                "state": {"type": "string", "description": "open/closed/all，默认 open", "default": "open"},
+            },
+            handler=github_list_issues,
+        ))
 
 
 # 快捷函数
