@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenNewt — 自主进化的 Agent 操作系统</title>
+  <meta name="description" content="OpenNewt OS 是一款自主进化的 Agent 操作系统，通过器官化架构实现感知、思考、行动的闭环，让 AI Agent 真正像人一样具备视觉、听觉、触觉与行动能力。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Variables ── */
+    :root {
+      --bg: #030712;
+      --bg-2: #0a0f1e;
+      --bg-3: #111827;
+      --surface: rgba(17,24,39,0.85);
+      --border: rgba(255,255,255,0.08);
+      --border-bright: rgba(255,255,255,0.16);
+      --primary: #22d3ee;
+      --primary-dim: rgba(34,211,238,0.12);
+      --accent: #818cf8;
+      --accent-dim: rgba(129,140,248,0.12);
+      --green: #34d399;
+      --green-dim: rgba(52,211,153,0.12);
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --text: #f1f5f9;
+      --text-2: #94a3b8;
+      --text-3: #64748b;
+      --radius: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --transition: 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    ::selection { background: var(--primary-dim); color: var(--primary); }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 3px; }
+
+    /* ── Grid Background ── */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Container ── */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .container-wide { max-width: 1360px; }
+
+    /* ── Navigation ── */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 16px 0;
+      transition: var(--transition);
+    }
+    .nav.scrolled {
+      background: rgba(3,7,18,0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .nav-logo svg { width: 32px; height: 32px; }
+    .nav-logo span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a { font-size: 14px; font-weight: 500; color: var(--text-2); transition: var(--transition); }
+    .nav-links a:hover { color: var(--primary); }
+    .nav-cta {
+      padding: 8px 20px;
+      background: var(--primary);
+      color: #030712;
+      font-weight: 700;
+      font-size: 14px;
+      border-radius: 8px;
+      transition: var(--transition);
+      cursor: pointer;
+      border: none;
+    }
+    .nav-cta:hover { background: #67e8f9; transform: translateY(-1px); }
+    .nav-mobile { display: none; cursor: pointer; padding: 8px; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: var(--primary-dim);
+      border: 1px solid rgba(34,211,238,0.25);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 32px;
+      letter-spacing: 0.5px;
+    }
+    .hero-badge .dot {
+      width: 7px; height: 7px;
+      background: var(--primary);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .hero h1 {
+      font-size: clamp(42px, 7vw, 80px);
+      font-weight: 900;
+      letter-spacing: -2.5px;
+      line-height: 1.05;
+      margin-bottom: 24px;
+      max-width: 900px;
+    }
+    .hero h1 .line-gradient {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 60%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-size: 200% 200%;
+      animation: gradientShift 4s ease infinite;
+    }
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2.2vw, 20px);
+      color: var(--text-2);
+      max-width: 680px;
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 64px;
+    }
+    .btn-primary {
+      padding: 14px 32px;
+      background: var(--primary);
+      color: #030712;
+      font-weight: 700;
+      font-size: 15px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary:hover { background: #67e8f9; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(34,211,238,0.3); }
+    .btn-outline {
+      padding: 14px 32px;
+      background: transparent;
+      color: var(--text);
+      font-weight: 600;
+      font-size: 15px;
+      border-radius: 10px;
+      border: 1px solid var(--border-bright);
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
+    .hero-stats {
+      display: flex;
+      gap: 48px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat-num {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--primary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .hero-stat-label { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+
+    /* ── Section Styles ── */
+    section { padding: 100px 0; }
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 17px;
+      color: var(--text-2);
+      max-width: 600px;
+      line-height: 1.7;
+    }
+    .section-header { margin-bottom: 56px; }
+
+    /* ── Problem Section ── */
+    .problem { background: var(--bg-2); }
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .problem-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .problem-card:hover { border-color: rgba(251,113,133,0.3); transform: translateY(-3px); }
+    .problem-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--rose), transparent);
+    }
+    .problem-icon {
+      width: 44px; height: 44px;
+      background: rgba(251,113,133,0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 20px;
+    }
+    .problem-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .problem-card p { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+
+    /* ── Organ System ── */
+    .organ-system { }
+    .organ-diagram {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 48px 0;
+    }
+    .organ-brain-row {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      margin-bottom: 24px;
+    }
+    .organ-nerve-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .organ-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      width: 130px;
+      transition: var(--transition);
+      position: relative;
+    }
+    .organ-card:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(34,211,238,0.1); }
+    .organ-icon { font-size: 32px; margin-bottom: 8px; display: block; }
+    .organ-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .organ-role { font-size: 11px; color: var(--text-3); }
+    .organ-connector {
+      width: 40px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    }
+    .organ-connector-down {
+      width: 2px; height: 20px;
+      background: linear-gradient(180deg, var(--primary), transparent);
+    }
+    .organ-center {
+      background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(129,140,248,0.15));
+      border: 1px solid rgba(34,211,238,0.3);
+      border-radius: var(--radius-lg);
+      padding: 24px 40px;
+      text-align: center;
+      position: relative;
+    }
+    .organ-center::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      padding: 1px;
+    }
+    .organ-center-icon { font-size: 36px; margin-bottom: 8px; }
+    .organ-center-name { font-size: 16px; font-weight: 800; color: var(--primary); }
+    .organ-center-sub { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+    /* Organ detail grid */
+    .organ-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 48px;
+    }
+    .organ-detail-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      transition: var(--transition);
+    }
+    .organ-detail-card:hover { border-color: var(--border-bright); }
+    .organ-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .organ-detail-icon { font-size: 24px; }
+    .organ-detail-title { font-size: 18px; font-weight: 700; }
+    .organ-detail-desc { font-size: 14px; color: var(--text-2); margin-bottom: 16px; line-height: 1.6; }
+    .organ-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .organ-tag {
+      padding: 4px 12px;
+      background: var(--primary-dim);
+      border: 1px solid rgba(34,211,238,0.2);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .organ-tag.green { background: var(--green-dim); border-color: rgba(52,211,153,0.2); color: var(--green); }
+    .organ-tag.amber { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.2); color: var(--amber); }
+    .organ-tag.rose { background: rgba(251,113,133,0.1); border-color: rgba(251,113,133,0.2); color: var(--rose); }
+    .organ-tag.accent { background: var(--accent-dim); border-color: rgba(129,140,248,0.2); color: var(--accent); }
+
+    /* ── Evolution ── */
+    .evolution { background: var(--bg-2); }
+    .evolution-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin: 48px 0;
+    }
+    .evo-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      min-width: 140px;
+      position: relative;
+    }
+    .evo-circle {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .evo-circle.monitor { background: var(--primary-dim); border: 2px solid rgba(34,211,238,0.4); }
+    .evo-circle.extract { background: rgba(129,140,248,0.12); border: 2px solid rgba(129,140,248,0.4); }
+    .evo-circle.generate { background: var(--green-dim); border: 2px solid rgba(52,211,153,0.4); }
+    .evo-circle.test { background: rgba(251,191,36,0.1); border: 2px solid rgba(251,191,36,0.4); }
+    .evo-circle.adopt { background: rgba(251,113,133,0.1); border: 2px solid rgba(251,113,133,0.4); }
+    .evo-step-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .evo-step-desc { font-size: 12px; color: var(--text-3); max-width: 120px; }
+    .evo-arrow {
+      width: 60px; height: 2px;
+      background: linear-gradient(90deg, var(--border-bright), var(--text-3));
+      position: relative;
+      top: -24px;
+    }
+
+    /* ── Tech Stack ── */
+    .tech-stack { }
+    .tech-logos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .tech-logo-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      transition: var(--transition);
+    }
+    .tech-logo-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .tech-logo-icon { font-size: 32px; }
+    .tech-logo-name { font-size: 14px; font-weight: 700; }
+    .tech-logo-desc { font-size: 12px; color: var(--text-3); text-align: center; }
+
+    /* ── Model Support ── */
+    .models { background: var(--bg-2); }
+    .models-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .model-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: var(--transition);
+    }
+    .model-card:hover { border-color: var(--border-bright); background: rgba(17,24,39,0.95); }
+    .model-icon { font-size: 28px; }
+    .model-info h4 { font-size: 15px; font-weight: 700; }
+    .model-info span { font-size: 12px; color: var(--text-3); }
+
+    /* ── Roadmap ── */
+    .roadmap { }
+    .roadmap-timeline {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+      position: relative;
+    }
+    .roadmap-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      position: relative;
+      transition: var(--transition);
+    }
+    .roadmap-item:hover { border-color: rgba(34,211,238,0.3); }
+    .roadmap-phase {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+    .roadmap-title { font-size: 18px; font-weight: 800; margin-bottom: 12px; }
+    .roadmap-desc { font-size: 14px; color: var(--text-2); margin-bottom: 16px; line-height: 1.6; }
+    .roadmap-items { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .roadmap-items li {
+      font-size: 13px;
+      color: var(--text-3);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .roadmap-items li::before {
+      content: '✓';
+      color: var(--green);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(129,140,248,0.08));
+      border: 1px solid rgba(34,211,238,0.15);
+      border-radius: var(--radius-xl);
+      padding: 80px 40px;
+      text-align: center;
+      margin: 40px 0 80px;
+    }
+    .cta-section h2 {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      margin-bottom: 16px;
+    }
+    .cta-section p { font-size: 18px; color: var(--text-2); margin-bottom: 32px; max-width: 560px; margin-left: auto; margin-right: auto; }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 48px 0;
+      background: var(--bg-2);
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .footer-logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; }
+    .footer-copy { font-size: 13px; color: var(--text-3); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 13px; color: var(--text-3); transition: var(--transition); }
+    .footer-links a:hover { color: var(--primary); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-mobile { display: block; }
+      .hero h1 { letter-spacing: -1.5px; }
+      .hero-stats { gap: 32px; }
+      .organ-brain-row { flex-direction: column; }
+      .organ-nerve-row { gap: 10px; }
+      .organ-connector { display: none; }
+      .organ-connector-down { display: none; }
+      .evolution-flow { gap: 0; }
+      .evo-arrow { display: none; }
+      .evo-step { min-width: 100px; }
+      .cta-section { padding: 48px 24px; }
+      .footer-inner { flex-direction: column; text-align: center; }
+    }
+
+    /* ── Animations ── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Glassmorphism panels ── */
+    .glass { background: rgba(17,24,39,0.7); backdrop-filter: blur(16px); border: 1px solid var(--border); }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border-bright), transparent); margin: 0; }
+
+    /* ── Comparison ── */
+    .comparison { background: var(--bg-2); }
+    .comparison-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 40px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .comparison-table th {
+      padding: 16px 20px;
+      background: rgba(17,24,39,0.9);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .comparison-table th:first-child { border-radius: var(--radius-lg) 0 0 0; }
+    .comparison-table th:last-child { border-radius: 0 var(--radius-lg) 0 0; }
+    .comparison-table td {
+      padding: 14px 20px;
+      font-size: 14px;
+      color: var(--text-2);
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,15,30,0.6);
+    }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .comparison-table tr:hover td { background: rgba(17,24,39,0.8); }
+    .comparison-table .check { color: var(--green); font-weight: 700; }
+    .comparison-table .cross { color: var(--text-3); }
+    .comparison-table .highlight { color: var(--primary); font-weight: 700; }
+    .comparison-table .name-col { font-weight: 600; color: var(--text); }
+  </style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- ═══════════════════════ NAVIGATION ═══════════════════════ -->
+<nav class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="#" class="nav-logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="14" stroke="#22d3ee" stroke-width="1.5" fill="none"/>
+        <circle cx="16" cy="16" r="8" stroke="#818cf8" stroke-width="1.5" fill="none"/>
+        <circle cx="16" cy="16" r="3" fill="#22d3ee"/>
+        <line x1="16" y1="2" x2="16" y2="8" stroke="#22d3ee" stroke-width="1.5"/>
+        <line x1="16" y1="24" x2="16" y2="30" stroke="#22d3ee" stroke-width="1.5"/>
+        <line x1="2" y1="16" x2="8" y2="16" stroke="#22d3ee" stroke-width="1.5"/>
+        <line x1="24" y1="16" x2="30" y2="16" stroke="#22d3ee" stroke-width="1.5"/>
+      </svg>
+      <span>OpenNewt</span>
+    </a>
+    <div class="nav-links">
+      <a href="#problem">痛点</a>
+      <a href="#organ">器官系统</a>
+      <a href="#evolution">进化引擎</a>
+      <a href="#tech">技术架构</a>
+      <a href="#roadmap">路线图</a>
+      <a href="#contact">联系我们</a>
+    </div>
+    <button class="nav-cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">预约演示</button>
+    <div class="nav-mobile" onclick="document.querySelector('.nav-links').classList.toggle('mobile-open')">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    自主进化 · 器官化架构 · 开放生态
+  </div>
+  <h1>
+    下一个十年<br/>
+    <span class="line-gradient">操作系统的新物种</span>
+  </h1>
+  <p class="hero-sub">
+    OpenNewt OS 重新定义 AI Agent — 通过器官化架构赋予 Agent 类人的感知、思考与行动能力。<br/>
+    不是工具，是会进化的数字生命体。
+  </p>
+  <div class="hero-actions">
+    <button class="btn-primary" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+      预约演示
+    </button>
+    <button class="btn-outline" onclick="document.getElementById('organ').scrollIntoView({behavior:'smooth'})">
+      了解架构 →
+    </button>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-num">9</div>
+      <div class="hero-stat-label">器官子系统</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">170+</div>
+      <div class="hero-stat-label">可进化技能</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">∞</div>
+      <div class="hero-stat-label">跨平台支持</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">5G</div>
+      <div class="hero-stat-label">进化闭环</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════ PROBLEM ═══════════════════════ -->
+<section class="problem" id="problem">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">核心痛点</div>
+      <h2 class="section-title">为什么现有 Agent 始终不够好用？</h2>
+      <p class="section-sub">当前主流 Agent 工具在架构层面存在系统性缺陷，这些问题不是修修补补能解决的。</p>
+    </div>
+    <div class="problem-grid">
+      <div class="problem-card fade-up">
+        <div class="problem-icon">🔧</div>
+        <h3>能力碎片化</h3>
+        <p>Claude Code 只能写代码，OpenHands 只能做浏览器自动化。每个工具只解决一个问题，用户在多个工具间疲于切换。</p>
+      </div>
+      <div class="problem-card fade-up">
+        <div class="problem-icon">🧠</div>
+        <h3>记忆断层</h3>
+        <p>每次对话 Agent 从零开始，不知道用户的偏好、项目的上下文、历史的决策理由。同样的错误犯两遍。</p>
+      </div>
+      <div class="problem-card fade-up">
+        <div class="problem-icon">📈</div>
+        <h3>进化停滞</h3>
+        <p>模型参数再大也无法弥补策略的缺失。Agent 无法从错误中学习，无法把成功的经验固化为可复用的能力。</p>
+      </div>
+      <div class="problem-card fade-up">
+        <div class="problem-icon">🔒</div>
+        <h3>平台锁定</h3>
+        <p>Claude Code 只跑命令行，Cursor 只在 VS Code 里。想换个环境？对不起，从头再来。</p>
+      </div>
+      <div class="problem-card fade-up">
+        <div class="problem-icon">🌏</div>
+        <h3>生态割裂</h3>
+        <p>微信、飞书、钉钉、企业微信——每个平台都要单独集成。没有统一入口，没有统一记忆。</p>
+      </div>
+      <div class="problem-card fade-up">
+        <div class="problem-icon">👁️</div>
+        <h3>视觉缺失</h3>
+        <p>大多数 Agent 只能处理文本和代码，无法感知屏幕内容，无法操作 GUI 软件，无法理解文档的视觉结构。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════ ORGAN SYSTEM ═══════════════════════ -->
+<section class="organ-system" id="organ">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">核心架构</div>
+      <h2 class="section-title">器官化架构 — 像人一样思考与行动</h2>
+      <p class="section-sub">OpenNewt OS 将 Agent 拆解为 9 大器官，每个器官独立进化，统一受大脑协调控制。</p>
+    </div>
+
+    <!-- Diagram -->
+    <div class="organ-diagram fade-up">
+      <!-- Brain + Nerve row -->
+      <div class="organ-brain-row">
+        <div class="organ-center">
+          <div class="organ-center-icon">🧠</div>
+          <div class="organ-center-name">大脑 Brain</div>
+          <div class="organ-center-sub">协调 · 记忆 · 思维 · 进化 · 安全</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin:8px 0;">
+        <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border-bright));"></div>
+        <span style="font-size:12px;color:var(--text-3);">协调控制</span>
+        <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--border-bright),transparent);"></div>
+      </div>
+      <div class="organ-nerve-row">
+        <div class="organ-card">
+          <span class="organ-icon">🫁</span>
+          <div class="organ-name">神经系统</div>
+          <div class="organ-role">条件反射</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin:8px 0;">
+        <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border-bright));"></div>
+        <span style="font-size:12px;color:var(--text-3);">感知 & 行动</span>
+        <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--border-bright),transparent);"></div>
+      </div>
+      <!-- Sensing organs -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;">
+        <div class="organ-card">
+          <span class="organ-icon">👁️</span>
+          <div class="organ-name">眼睛</div>
+          <div class="organ-role">视觉理解</div>
+        </div>
+        <div class="organ-card">
+          <span class="organ-icon">👂</span>
+          <div class="organ-name">耳朵</div>
+          <div class="organ-role">语音输入</div>
+        </div>
+        <div class="organ-card">
+          <span class="organ-icon">🤲</span>
+          <div class="organ-name">触觉</div>
+          <div class="organ-role">环境感知</div>
+        </div>
+        <div class="organ-card">
+          <span class="organ-icon">👃</span>
+          <div class="organ-name">鼻子</div>
+          <div class="organ-role">信息嗅探</div>
+        </div>
+      </div>
+      <!-- Action organs -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+        <div class="organ-card">
+          <span class="organ-icon">✋</span>
+          <div class="organ-name">手</div>
+          <div class="organ-role">工具调度</div>
+        </div>
+        <div class="organ-card">
+          <span class="organ-icon">🦶</span>
+          <div class="organ-name">脚</div>
+          <div class="organ-role">远程执行</div>
+        </div>
+        <div class="organ-card">
+          <span class="organ-icon">👄</span>
+          <div class="organ-name">嘴巴</div>
+          <div class="organ-role">多模输出</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Organ detail cards -->
+    <div class="organ-detail-grid">
+      <!-- Brain -->
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">🧠</span>
+          <span class="organ-detail-title">大脑 Brain</span>
+        </div>
+        <p class="organ-detail-desc">协调中心、决策中心、进化中心、安全中心。统一调度所有器官，负责任务规划、意图理解、记忆管理与策略优化。</p>
+        <div class="organ-tags">
+          <span class="organ-tag">意图理解</span>
+          <span class="organ-tag">任务拆解</span>
+          <span class="organ-tag">三层记忆</span>
+          <span class="organ-tag">A/B测试</span>
+          <span class="organ-tag">安全护栏</span>
+        </div>
+      </div>
+      <!-- Eye -->
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">👁️</span>
+          <span class="organ-detail-title">眼睛 Eye</span>
+        </div>
+        <p class="organ-detail-desc">视觉感知与理解。OCR 识别文档、截图分析、GUI 软件操作、视觉回归测试。赋予 Agent 看见屏幕的能力。</p>
+        <div class="organ-tags">
+          <span class="organ-tag green">OCR识别</span>
+          <span class="organ-tag green">截图分析</span>
+          <span class="organ-tag green">键鼠模拟</span>
+          <span class="organ-tag green">视觉QA</span>
+        </div>
+      </div>
+      <!-- Ear -->
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">👂</span>
+          <span class="organ-detail-title">耳朵 Ear</span>
+        </div>
+        <p class="organ-detail-desc">语音输入与声纹感知。ASR 语音转文字、实时通话、环境音检测、噪音分离。让语音成为第一交互入口。</p>
+        <div class="organ-tags">
+          <span class="organ-tag amber">ASR语音识别</span>
+          <span class="organ-tag amber">实时通话</span>
+          <span class="organ-tag amber">环境音检测</span>
+        </div>
+      </div>
+      <!-- Nose -->
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">👃</span>
+          <span class="organ-detail-title">鼻子 Nose</span>
+        </div>
+        <p class="organ-detail-desc">信息嗅探与环境感知。实时抓取网页/API 变更、监控服务健康、检测异常波动。先于用户发现问题。</p>
+        <div class="organ-tags">
+          <span class="organ-tag rose">网络爬取</span>
+          <span class="organ-tag rose">API监控</span>
+          <span class="organ-tag rose">异常预警</span>
+        </div>
+      </div>
+      <!-- Hand -->
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">✋</span>
+          <span class="organ-detail-title">手 Hand</span>
+        </div>
+        <p class="organ-detail-desc">工具调度与操作执行。终端命令、文件系统、Git 操作、API 调用、Docker 管理。Agent 的「动手能力」。</p>
+        <div class="organ-tags">
+          <span class="organ-tag accent">终端命令</span>
+          <span class="organ-tag accent">文件操作</span>
+          <span class="organ-tag accent">Git管理</span>
+          <span class="organ-tag accent">Docker</span>
+          <span class="organ-tag accent">MCP扩展</span>
+        </div>
+      </div>
+      <!-- Foot -->
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">🦶</span>
+          <span class="organ-detail-title">脚 Foot</span>
+        </div>
+        <p class="organ-detail-desc">远程执行与平台穿透。跨服务器操作、云端任务提交、CI/CD 触发、远程脚本执行。Agent 的「腿」。</p>
+        <div class="organ-tags">
+          <span class="organ-tag">SSH远程</span>
+          <span class="organ-tag">CI/CD集成</span>
+          <span class="organ-tag">Webhook触发</span>
+        </div>
+      </div>
+      <!-- Mouth -->
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">👄</span>
+          <span class="organ-detail-title">嘴巴 Mouth</span>
+        </div>
+        <p class="organ-detail-desc">多模态输出与表达。TTS 语音回复、图表生成、文档导出、代码生成、图片生成。Agent 的「表达能力」。</p>
+        <div class="organ-tags">
+          <span class="organ-tag green">TTS语音</span>
+          <span class="organ-tag green">文字回复</span>
+          <span class="organ-tag green">文档生成</span>
+          <span class="organ-tag green">图表可视化</span>
+        </div>
+      </div>
+      <!-- Touch -->
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">🤲</span>
+          <span class="organ-detail-title">触觉 Touch</span>
+        </div>
+        <p class="organ-detail-desc">环境感知与状态监控。文件系统变化监听、系统健康检查、工具可用性探测、上下文环境检测。</p>
+        <div class="organ-tags">
+          <span class="organ-tag amber">文件监听</span>
+          <span class="organ-tag amber">健康监控</span>
+          <span class="organ-tag amber">工具探测</span>
+        </div>
+      </div>
+      <!-- Nerve -->
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">🫁</span>
+          <span class="organ-detail-title">神经系统 Nerve</span>
+        </div>
+        <p class="organ-detail-desc">条件反射与自动触发。不需要大脑决策的即时响应：超时自动重试、错误自动告警、文件变化自动构建。</p>
+        <div class="organ-tags">
+          <span class="organ-tag rose">自动重试</span>
+          <span class="organ-tag rose">异常告警</span>
+          <span class="organ-tag rose">热加载</span>
+          <span class="organ-tag rose">心跳检测</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════ EVOLUTION ENGINE ═══════════════════════ -->
+<section class="evolution" id="evolution">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">核心能力</div>
+      <h2 class="section-title">进化引擎 — Agent 越用越聪明</h2>
+      <p class="section-sub">每一次执行都是学习机会。通过 Monitor → Extract → Generate → Test → Adopt 五步闭环，Agent 自动从经验中进化。</p>
+    </div>
+
+    <div class="evolution-flow fade-up">
+      <div class="evo-step">
+        <div class="evo-circle monitor">📡</div>
+        <div class="evo-step-name">Monitor</div>
+        <div class="evo-step-desc">轨迹收集</div>
+      </div>
+      <div class="evo-arrow"></div>
+      <div class="evo-step">
+        <div class="evo-circle extract">🔍</div>
+        <div class="evo-step-name">Extract</div>
+        <div class="evo-step-desc">经验提炼</div>
+      </div>
+      <div class="evo-arrow"></div>
+      <div class="evo-step">
+        <div class="evo-circle generate">⚙️</div>
+        <div class="evo-step-name">Generate</div>
+        <div class="evo-step-desc">技能生成</div>
+      </div>
+      <div class="evo-arrow"></div>
+      <div class="evo-step">
+        <div class="evo-circle test">🧪</div>
+        <div class="evo-step-name">Test</div>
+        <div class="evo-step-desc">A/B验证</div>
+      </div>
+      <div class="evo-arrow"></div>
+      <div class="evo-step">
+        <div class="evo-circle adopt">🚀</div>
+        <div class="evo-step-name">Adopt</div>
+        <div class="evo-step-desc">策略优化</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:48px;">
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">📊</span>
+          <span class="organ-detail-title">轨迹收集</span>
+        </div>
+        <p class="organ-detail-desc">完整记录每次任务的执行路径：用了哪些工具、调用顺序、耗时、结果。数据驱动的进化基础。</p>
+      </div>
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">🧬</span>
+          <span class="organ-detail-title">技能固化</span>
+        </div>
+        <p class="organ-detail-desc">成功的执行路径自动抽象为可复用技能（Skill）。下次遇到类似任务，直接调用，无需重新规划。</p>
+      </div>
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">🔬</span>
+          <span class="organ-detail-title">感知进化</span>
+        </div>
+        <p class="organ-detail-desc">每个器官的感知精度独立进化：眼睛的 OCR 随使用越来越准，耳朵的 ASR 随对话越来越懂你。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════ TECH STACK ═══════════════════════ -->
+<section class="tech-stack" id="tech">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">技术架构</div>
+      <h2 class="section-title">开放架构 · 全模型支持</h2>
+      <p class="section-sub">不绑定任何一家模型，不锁定任何一座平台。开放接入，随心切换。</p>
+    </div>
+
+    <div class="section-label" style="margin-top:32px;">模型支持</div>
+    <div class="models-grid fade-up">
+      <div class="model-card">
+        <span class="model-icon">🤖</span>
+        <div class="model-info"><h4>OpenAI</h4><span>GPT-4o / o1 / o3</span></div>
+      </div>
+      <div class="model-card">
+        <span class="model-icon">🧠</span>
+        <div class="model-info"><h4>Claude</h4><span>Claude 3.5 / 3.7</span></div>
+      </div>
+      <div class="model-card">
+        <span class="model-icon">🌐</span>
+        <div class="model-info"><h4>Gemini</h4><span>Gemini 2.0 / Flash</span></div>
+      </div>
+      <div class="model-card">
+        <span class="model-icon">🐉</span>
+        <div class="model-info"><h4>DeepSeek</h4><span>V3 / R1 / Chat</span></div>
+      </div>
+      <div class="model-card">
+        <span class="model-icon">☁️</span>
+        <div class="model-info"><h4>智谱 GLM</h4><span>GLM-4 / GLM-4V</span></div>
+      </div>
+      <div class="model-card">
+        <span class="model-icon">🌸</span>
+        <div class="model-info"><h4>Kimi</h4><span>Moonshot V1 / V2</span></div>
+      </div>
+      <div class="model-card">
+        <span class="model-icon">🦙</span>
+        <div class="model-info"><h4>本地模型</h4><span>Ollama / vLLM</span></div>
+      </div>
+      <div class="model-card">
+        <span class="model-icon">✨</span>
+        <div class="model-info"><h4>更多...</h4><span>Groq / Cohere / 火山</span></div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:48px;">技术栈</div>
+    <div class="tech-logos fade-up">
+      <div class="tech-logo-card">
+        <div class="tech-logo-icon">🐍</div>
+        <div class="tech-logo-name">Python 3.12+</div>
+        <div class="tech-logo-desc">核心运行时</div>
+      </div>
+      <div class="tech-logo-card">
+        <div class="tech-logo-icon">⚡</div>
+        <div class="tech-logo-name">FastAPI</div>
+        <div class="tech-logo-desc">API 网关 & Web</div>
+      </div>
+      <div class="tech-logo-card">
+        <div class="tech-logo-icon">🗄️</div>
+        <div class="tech-logo-name">SQLite + Vector</div>
+        <div class="tech-logo-desc">记忆存储</div>
+      </div>
+      <div class="tech-logo-card">
+        <div class="tech-logo-icon">🖥️</div>
+        <div class="tech-logo-name">Tauri v2</div>
+        <div class="tech-logo-desc">跨平台桌面 GUI</div>
+      </div>
+      <div class="tech-logo-card">
+        <div class="tech-logo-icon">🔊</div>
+        <div class="tech-logo-name">Whisper</div>
+        <div class="tech-logo-desc">语音识别引擎</div>
+      </div>
+      <div class="tech-logo-card">
+        <div class="tech-logo-icon">👁️</div>
+        <div class="tech-logo-name">EasyOCR</div>
+        <div class="tech-logo-desc">视觉识别引擎</div>
+      </div>
+      <div class="tech-logo-card">
+        <div class="tech-logo-icon">🔗</div>
+        <div class="tech-logo-name">MCP 协议</div>
+        <div class="tech-logo-desc">工具扩展标准</div>
+      </div>
+      <div class="tech-logo-card">
+        <div class="tech-logo-icon">🐳</div>
+        <div class="tech-logo-name">Docker</div>
+        <div class="tech-logo-desc">环境隔离</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════ COMPARISON ═══════════════════════ -->
+<section class="comparison" id="comparison">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">竞品对比</div>
+      <h2 class="section-title">OpenNewt OS 的差异化优势</h2>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="comparison-table fade-up">
+        <thead>
+          <tr>
+            <th>能力维度</th>
+            <th>Claude Code</th>
+            <th>Hermes Agent</th>
+            <th>Devin</th>
+            <th class="highlight">OpenNewt OS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name-col">器官化架构</td>
+            <td class="cross">—</td>
+            <td class="cross">—</td>
+            <td class="cross">—</td>
+            <td class="highlight">✅ 9大器官</td>
+          </tr>
+          <tr>
+            <td class="name-col">三层记忆系统</td>
+            <td class="check">✅</td>
+            <td class="check">✅</td>
+            <td class="check">✅</td>
+            <td class="highlight">✅ 索引+上下文+蒸馏</td>
+          </tr>
+          <tr>
+            <td class="name-col">进化引擎闭环</td>
+            <td class="cross">—</td>
+            <td class="check">✅</td>
+            <td class="check">✅</td>
+            <td class="highlight">✅ Monitor→Adopt 5步</td>
+          </tr>
+          <tr>
+            <td class="name-col">视觉感知（GUI）</td>
+            <td class="cross">—</td>
+            <td class="cross">—</td>
+            <td class="check">✅</td>
+            <td class="highlight">✅ OCR + 键鼠模拟</td>
+          </tr>
+          <tr>
+            <td class="name-col">语音交互</td>
+            <td class="cross">—</td>
+            <td class="cross">—</td>
+            <td class="cross">—</td>
+            <td class="highlight">✅ ASR + TTS + 通话</td>
+          </tr>
+          <tr>
+            <td class="name-col">跨平台 GUI</td>
+            <td class="check">✅ VS Code</td>
+            <td class="cross">—</td>
+            <td class="cross">—</td>
+            <td class="highlight">✅ Win/Mac/Linux</td>
+          </tr>
+          <tr>
+            <td class="name-col">微信/飞书/钉钉</td>
+            <td class="cross">—</td>
+            <td class="check">✅</td>
+            <td class="cross">—</td>
+            <td class="highlight">✅ 全平台覆盖</td>
+          </tr>
+          <tr>
+            <td class="name-col">神经系统（条件反射）</td>
+            <td class="cross">—</td>
+            <td class="cross">—</td>
+            <td class="cross">—</td>
+            <td class="highlight">✅ 自动触发</td>
+          </tr>
+          <tr>
+            <td class="name-col">全模型 API 支持</td>
+            <td class="check">✅ Anthropic</td>
+            <td class="check">✅ 多家</td>
+            <td class="cross">—</td>
+            <td class="highlight">✅ 10+ 模型商</td>
+          </tr>
+          <tr>
+            <td class="name-col">技能市场</td>
+            <td class="cross">—</td>
+            <td class="check">✅</td>
+            <td class="cross">—</td>
+            <td class="highlight">✅ 计划中</td>
+          </tr>
+          <tr>
+            <td class="name-col">开源计划</td>
+            <td class="cross">闭源</td>
+            <td class="check">✅ MIT</td>
+            <td class="cross">闭源</td>
+            <td class="highlight">✅ 开源核心</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════ ROADMAP ═══════════════════════ -->
+<section class="roadmap" id="roadmap">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">发展路线</div>
+      <h2 class="section-title">从 0 到 1，稳步推进</h2>
+      <p class="section-sub">每一步都有明确的里程碑，每个里程碑都有可验证的交付物。</p>
+    </div>
+    <div class="roadmap-timeline">
+      <div class="roadmap-item fade-up">
+        <div class="roadmap-phase">PHASE 1 — Q2-Q3 2026</div>
+        <div class="roadmap-title">内核构建</div>
+        <p class="roadmap-desc">构建 Agent 内核，完成器官系统的底层架构，跑通核心场景。</p>
+        <ul class="roadmap-items">
+          <li>Agent Loop 多模式（独立/协作/团队）</li>
+          <li>三层记忆架构（索引/上下文/蒸馏）</li>
+          <li>大脑协调器（意图理解 + 任务拆解）</li>
+          <li>手器官：终端 + 文件 + Git + MCP</li>
+          <li>CLI 入口 + Web 界面</li>
+          <li>接入 3+ 主流模型 API</li>
+        </ul>
+      </div>
+      <div class="roadmap-item fade-up">
+        <div class="roadmap-phase">PHASE 2 — Q4 2026</div>
+        <div class="roadmap-title">感知扩张</div>
+        <p class="roadmap-desc">补全感知器官，让 Agent 真正「看得见、听得懂」。</p>
+        <ul class="roadmap-items">
+          <li>眼器官：OCR + 截图分析 + 键鼠模拟</li>
+          <li>耳器官：ASR 语音识别 + TTS 语音合成</li>
+          <li>触觉器官：文件监听 + 环境探测</li>
+          <li>神经系统：超时重试 + 自动告警</li>
+          <li>跨平台 GUI（Tauri v2）</li>
+          <li>微信 / 飞书 / 钉钉接入</li>
+        </ul>
+      </div>
+      <div class="roadmap-item fade-up">
+        <div class="roadmap-phase">PHASE 3 — Q1 2027</div>
+        <div class="roadmap-title">进化爆发</div>
+        <p class="roadmap-desc">激活进化引擎，让 Agent 真正开始「自我进化」。</p>
+        <ul class="roadmap-items">
+          <li>进化引擎 5 步闭环（Monitor→Adopt）</li>
+          <li>技能注册表 + 技能市场（内测）</li>
+          <li>多 Agent 协作（子 Agent 派发 + 结果聚合）</li>
+          <li>企业级 RBAC 权限管理</li>
+          <li>开放核心模块开源（MIT License）</li>
+        </ul>
+      </div>
+      <div class="roadmap-item fade-up">
+        <div class="roadmap-phase">PHASE 4 — Q2+ 2027</div>
+        <div class="roadmap-title">生态繁荣</div>
+        <p class="roadmap-desc">打造开放的 Agent 生态，连接开发者、企业与用户。</p>
+        <ul class="roadmap-items">
+          <li>开放技能市场（开放注册）</li>
+          <li>插件开发者 SDK</li>
+          <li>企业知识库深度集成</li>
+          <li>Plugin Store 正式上线</li>
+          <li>多语言国际化支持</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════ CTA ═══════════════════════ -->
+<section class="container">
+  <div class="cta-section fade-up">
+    <h2>打造真正会进化的 Agent</h2>
+    <p>无论是开发者、团队还是企业，OpenNewt OS 都能为你的 AI 战略提供下一代架构支撑。</p>
+    <div class="hero-actions" style="margin-bottom:0;">
+      <button class="btn-primary" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">
+        预约产品演示
+      </button>
+      <button class="btn-outline" onclick="document.getElementById('comparison').scrollIntoView({behavior:'smooth'})">
+        了解更多 →
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ CONTACT ═══════════════════════ -->
+<section class="problem" id="contact">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">联系我们</div>
+      <h2 class="section-title">开启合作</h2>
+      <p class="section-sub">无论你是投资人、开发者还是企业用户，欢迎联系我们。</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:40px;">
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">📧</span>
+          <span class="organ-detail-title">商务合作</span>
+        </div>
+        <p class="organ-detail-desc">企业授权、私有部署、品牌定制，欢迎洽谈合作。</p>
+        <div class="organ-tags" style="margin-top:12px;">
+          <span class="organ-tag">424321066@qq.com</span>
+        </div>
+      </div>
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">💬</span>
+          <span class="organ-detail-title">开发者社区</span>
+        </div>
+        <p class="organ-detail-desc">开源项目、技术讨论、插件开发，欢迎加入共建。</p>
+        <div class="organ-tags" style="margin-top:12px;">
+          <span class="organ-tag green">GitHub</span>
+        </div>
+      </div>
+      <div class="organ-detail-card fade-up">
+        <div class="organ-detail-header">
+          <span class="organ-detail-icon">🤝</span>
+          <span class="organ-detail-title">投资洽谈</span>
+        </div>
+        <p class="organ-detail-desc">如果你对下一代 AI Agent 操作系统感兴趣，欢迎交流。</p>
+        <div class="organ-tags" style="margin-top:12px;">
+          <span class="organ-tag accent">Wechat:Axonewt</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-logo">
+      <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="14" stroke="#22d3ee" stroke-width="1.5" fill="none"/>
+        <circle cx="16" cy="16" r="8" stroke="#818cf8" stroke-width="1.5" fill="none"/>
+        <circle cx="16" cy="16" r="3" fill="#22d3ee"/>
+      </svg>
+      <span style="font-weight:800;">OpenNewt</span>
+    </div>
+    <div class="footer-copy">© 2026 OpenNewt OS. All rights reserved.</div>
+    <div class="footer-links">
+      <a href="#organ">架构</a>
+      <a href="#tech">技术</a>
+      <a href="#roadmap">路线图</a>
+      <a href="#contact">联系</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // Intersection Observer for fade-up
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // Counter animation
+  function animateCounters() {
+    document.querySelectorAll('.hero-stat-num').forEach(el => {
+      const text = el.textContent;
+      if (text === '∞' || text === '5G') return;
+      const num = parseInt(text);
+      if (isNaN(num)) return;
+      let current = 0;
+      const step = Math.ceil(num / 40);
+      const timer = setInterval(() => {
+        current = Math.min(current + step, num);
+        el.textContent = current + (text.includes('+') ? '+' : '');
+        if (current >= num) clearInterval(timer);
+      }, 30);
+    });
+  }
+  setTimeout(animateCounters, 300);
+</script>
+
+</body>
+</html>
