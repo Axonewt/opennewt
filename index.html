@@ -1,1435 +1,827 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OpenNewt — 自主进化的 Agent 操作系统</title>
-  <meta name="description" content="OpenNewt OS 是一款自主进化的 Agent 操作系统，通过器官化架构实现感知、思考、行动的闭环，让 AI Agent 真正像人一样具备视觉、听觉、触觉与行动能力。" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <style>
-    /* ── Variables ── */
-    :root {
-      --bg: #030712;
-      --bg-2: #0a0f1e;
-      --bg-3: #111827;
-      --surface: rgba(17,24,39,0.85);
-      --border: rgba(255,255,255,0.08);
-      --border-bright: rgba(255,255,255,0.16);
-      --primary: #22d3ee;
-      --primary-dim: rgba(34,211,238,0.12);
-      --accent: #818cf8;
-      --accent-dim: rgba(129,140,248,0.12);
-      --green: #34d399;
-      --green-dim: rgba(52,211,153,0.12);
-      --amber: #fbbf24;
-      --rose: #fb7185;
-      --text: #f1f5f9;
-      --text-2: #94a3b8;
-      --text-3: #64748b;
-      --radius: 12px;
-      --radius-lg: 20px;
-      --radius-xl: 28px;
-      --transition: 0.35s cubic-bezier(0.4,0,0.2,1);
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="OpenNewt — Next-generation AI Agent Platform. Modular, extensible, open source. Let AI truly work for you.">
+<title>OpenNewt — AI Agent 平台</title>
+<style>
+  /* ============================================================
+     DESIGN SYSTEM — Glassmorphism + Aurora UI + OLED Dark
+     ============================================================ */
+  :root {
+    /* Light theme */
+    --bg: #f5f3ff;
+    --bg-secondary: #ede9fe;
+    --bg-tertiary: #e0e7ff;
+    --surface: #ffffff;
+    --surface-secondary: #faf5ff;
+    --text: #1a1025;
+    --text-secondary: #4a3f5c;
+    --text-tertiary: #8b7f9e;
+    --accent: #7C3AED;
+    --accent-light: rgba(124,58,237,0.12);
+    --accent-glow: rgba(124,58,237,0.25);
+    --cyan: #06B6D4;
+    --cyan-glow: rgba(6,182,212,0.25);
+    --border: rgba(124,58,237,0.15);
+    --border-subtle: rgba(124,58,237,0.08);
+    --gradient-primary: linear-gradient(135deg, #7C3AED, #6366F1, #06B6D4);
+    --gradient-hero: linear-gradient(135deg, #7C3AED 0%, #6366F1 40%, #06B6D4 100%);
+    --card-bg: rgba(255,255,255,0.7);
+    --card-border: rgba(124,58,237,0.12);
+    --nav-bg: rgba(255,255,255,0.75);
+    --footer-bg: #1a1025;
+  }
 
-    /* ── Reset ── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; font-size: 16px; }
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.7;
-      overflow-x: hidden;
-    }
-    ::selection { background: var(--primary-dim); color: var(--primary); }
-    a { color: inherit; text-decoration: none; }
-    img { max-width: 100%; }
+  .dark {
+    --bg: #0a0a14;
+    --bg-secondary: #0f0f23;
+    --bg-tertiary: #16162e;
+    --surface: #12122a;
+    --surface-secondary: #1a1a36;
+    --text: #f0edf8;
+    --text-secondary: #b8b0cc;
+    --text-tertiary: #6b6380;
+    --accent: #8b5cf6;
+    --accent-light: rgba(139,92,246,0.15);
+    --accent-glow: rgba(139,92,246,0.3);
+    --cyan: #22d3ee;
+    --cyan-glow: rgba(34,211,238,0.25);
+    --border: rgba(139,92,246,0.2);
+    --border-subtle: rgba(139,92,246,0.1);
+    --gradient-primary: linear-gradient(135deg, #8b5cf6, #6366F1, #22d3ee);
+    --gradient-hero: linear-gradient(135deg, #8b5cf6 0%, #7C3AED 40%, #22d3ee 100%);
+    --card-bg: rgba(20,20,48,0.7);
+    --card-border: rgba(139,92,246,0.15);
+    --nav-bg: rgba(10,10,20,0.8);
+    --footer-bg: #060610;
+  }
 
-    /* ── Scrollbar ── */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 3px; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ── Grid Background ── */
-    .grid-bg {
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px);
-      background-size: 60px 60px;
-      pointer-events: none;
-      z-index: 0;
-    }
+  html { scroll-behavior: smooth; }
 
-    /* ── Container ── */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-      position: relative;
-      z-index: 1;
-    }
-    .container-wide { max-width: 1360px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+    transition: background 0.3s, color 0.3s;
+  }
 
-    /* ── Navigation ── */
-    .nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      padding: 16px 0;
-      transition: var(--transition);
-    }
-    .nav.scrolled {
-      background: rgba(3,7,18,0.92);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-    }
-    .nav-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-    .nav-logo svg { width: 32px; height: 32px; }
-    .nav-logo span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .nav-links { display: flex; gap: 32px; align-items: center; }
-    .nav-links a { font-size: 14px; font-weight: 500; color: var(--text-2); transition: var(--transition); }
-    .nav-links a:hover { color: var(--primary); }
-    .nav-cta {
-      padding: 8px 20px;
-      background: var(--primary);
-      color: #030712;
-      font-weight: 700;
-      font-size: 14px;
-      border-radius: 8px;
-      transition: var(--transition);
-      cursor: pointer;
-      border: none;
-    }
-    .nav-cta:hover { background: #67e8f9; transform: translateY(-1px); }
-    .nav-mobile { display: none; cursor: pointer; padding: 8px; }
+  /* Aurora background */
+  .aurora-bg {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    overflow: hidden;
+  }
+  .aurora-bg::before, .aurora-bg::after {
+    content: '';
+    position: absolute; border-radius: 50%;
+    filter: blur(120px); opacity: 0.35;
+    animation: auroraFloat 20s ease-in-out infinite;
+  }
+  .aurora-bg::before {
+    width: 600px; height: 600px;
+    background: var(--accent);
+    top: -100px; left: -100px;
+    animation-delay: 0s;
+  }
+  .aurora-bg::after {
+    width: 500px; height: 500px;
+    background: var(--cyan);
+    bottom: -100px; right: -100px;
+    animation-delay: -10s;
+  }
+  @keyframes auroraFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(80px, 60px) scale(1.15); }
+    66% { transform: translate(-40px, -30px) scale(0.9); }
+  }
 
-    /* ── Hero ── */
-    .hero {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 120px 24px 80px;
-      position: relative;
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      background: var(--primary-dim);
-      border: 1px solid rgba(34,211,238,0.25);
-      border-radius: 100px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--primary);
-      margin-bottom: 32px;
-      letter-spacing: 0.5px;
-    }
-    .hero-badge .dot {
-      width: 7px; height: 7px;
-      background: var(--primary);
-      border-radius: 50%;
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.8); }
-    }
-    .hero h1 {
-      font-size: clamp(42px, 7vw, 80px);
-      font-weight: 900;
-      letter-spacing: -2.5px;
-      line-height: 1.05;
-      margin-bottom: 24px;
-      max-width: 900px;
-    }
-    .hero h1 .line-gradient {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 60%, #c084fc 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-size: 200% 200%;
-      animation: gradientShift 4s ease infinite;
-    }
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    .hero-sub {
-      font-size: clamp(16px, 2.2vw, 20px);
-      color: var(--text-2);
-      max-width: 680px;
-      margin-bottom: 40px;
-      line-height: 1.7;
-    }
-    .hero-actions {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-bottom: 64px;
-    }
-    .btn-primary {
-      padding: 14px 32px;
-      background: var(--primary);
-      color: #030712;
-      font-weight: 700;
-      font-size: 15px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      transition: var(--transition);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn-primary:hover { background: #67e8f9; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(34,211,238,0.3); }
-    .btn-outline {
-      padding: 14px 32px;
-      background: transparent;
-      color: var(--text);
-      font-weight: 600;
-      font-size: 15px;
-      border-radius: 10px;
-      border: 1px solid var(--border-bright);
-      cursor: pointer;
-      transition: var(--transition);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
-    .hero-stats {
-      display: flex;
-      gap: 48px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .hero-stat { text-align: center; }
-    .hero-stat-num {
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--primary);
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .hero-stat-label { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+  /* ===== NAV ===== */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.3s;
+  }
+  .nav-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+  }
+  .nav-logo {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.5px;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a {
+    text-decoration: none; font-size: 13.5px; font-weight: 500;
+    color: var(--text-secondary); transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .theme-btn {
+    background: var(--surface-secondary); border: 1px solid var(--border);
+    color: var(--text-secondary); width: 36px; height: 36px; border-radius: 10px;
+    cursor: pointer; font-size: 16px; display: flex; align-items: center;
+    justify-content: center; transition: all 0.2s;
+  }
+  .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+  /* ===== LANGUAGE SELECTOR ===== */
+  .lang-select {
+    background: var(--surface-secondary); border: 1px solid var(--border);
+    color: var(--text-secondary); padding: 6px 10px; border-radius: 10px;
+    cursor: pointer; font-size: 12.5px; font-weight: 500;
+    transition: all 0.2s; outline: none;
+    appearance: none; -webkit-appearance: none;
+  }
+  .lang-select:hover { border-color: var(--accent); color: var(--accent); }
+  .lang-select:focus { border-color: var(--accent); }
 
-    /* ── Section Styles ── */
-    section { padding: 100px 0; }
-    .section-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--primary);
-      margin-bottom: 16px;
-    }
-    .section-title {
-      font-size: clamp(28px, 4vw, 44px);
-      font-weight: 800;
-      letter-spacing: -1.5px;
-      line-height: 1.2;
-      margin-bottom: 16px;
-    }
-    .section-sub {
-      font-size: 17px;
-      color: var(--text-2);
-      max-width: 600px;
-      line-height: 1.7;
-    }
-    .section-header { margin-bottom: 56px; }
+  .hamburger {
+    display: none; background: none; border: none; color: var(--text);
+    font-size: 22px; cursor: pointer;
+  }
 
-    /* ── Problem Section ── */
-    .problem { background: var(--bg-2); }
-    .problem-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-    }
-    .problem-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      position: relative;
-      overflow: hidden;
-      transition: var(--transition);
-    }
-    .problem-card:hover { border-color: rgba(251,113,133,0.3); transform: translateY(-3px); }
-    .problem-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--rose), transparent);
-    }
-    .problem-icon {
-      width: 44px; height: 44px;
-      background: rgba(251,113,133,0.1);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 16px;
-      font-size: 20px;
-    }
-    .problem-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
-    .problem-card p { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+  /* ===== HERO ===== */
+  .hero {
+    min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; padding: 120px 24px 80px;
+    position: relative;
+  }
+  .hero-content { text-align: center; max-width: 720px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 500;
+    color: var(--accent); background: var(--accent-light);
+    border: 1px solid var(--border); margin-bottom: 28px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .hero-badge .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    animation: pulseDot 2s ease-in-out infinite;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .hero h1 {
+    font-size: clamp(36px, 7vw, 64px); font-weight: 800;
+    line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 20px;
+  }
+  .hero h1 .gradient-text {
+    background: var(--gradient-hero);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: clamp(15px, 2vw, 18px); color: var(--text-secondary);
+    max-width: 520px; margin: 0 auto 36px; line-height: 1.7;
+  }
+  .hero-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    padding: 12px 28px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    text-decoration: none; transition: all 0.25s; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; border: none;
+  }
+  .btn-primary {
+    background: var(--gradient-primary); color: #fff;
+    box-shadow: 0 4px 24px var(--accent-glow);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 32px var(--accent-glow);
+  }
+  .btn-secondary {
+    background: var(--card-bg); color: var(--text);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .btn-secondary:hover {
+    border-color: var(--accent); background: var(--accent-light);
+  }
 
-    /* ── Organ System ── */
-    .organ-system { }
-    .organ-diagram {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin: 48px 0;
-    }
-    .organ-brain-row {
-      display: flex;
-      align-items: center;
-      gap: 32px;
-      margin-bottom: 24px;
-    }
-    .organ-nerve-row {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .organ-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      text-align: center;
-      width: 130px;
-      transition: var(--transition);
-      position: relative;
-    }
-    .organ-card:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(34,211,238,0.1); }
-    .organ-icon { font-size: 32px; margin-bottom: 8px; display: block; }
-    .organ-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
-    .organ-role { font-size: 11px; color: var(--text-3); }
-    .organ-connector {
-      width: 40px; height: 2px;
-      background: linear-gradient(90deg, transparent, var(--primary), transparent);
-    }
-    .organ-connector-down {
-      width: 2px; height: 20px;
-      background: linear-gradient(180deg, var(--primary), transparent);
-    }
-    .organ-center {
-      background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(129,140,248,0.15));
-      border: 1px solid rgba(34,211,238,0.3);
-      border-radius: var(--radius-lg);
-      padding: 24px 40px;
-      text-align: center;
-      position: relative;
-    }
-    .organ-center::before {
-      content: '';
-      position: absolute;
-      inset: -1px;
-      border-radius: var(--radius-lg);
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      padding: 1px;
-    }
-    .organ-center-icon { font-size: 36px; margin-bottom: 8px; }
-    .organ-center-name { font-size: 16px; font-weight: 800; color: var(--primary); }
-    .organ-center-sub { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+  /* ===== GLASS CARD ===== */
+  .glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px; padding: 32px 28px;
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+  .glass-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 40px var(--accent-glow);
+  }
 
-    /* Organ detail grid */
-    .organ-detail-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-      margin-top: 48px;
-    }
-    .organ-detail-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      transition: var(--transition);
-    }
-    .organ-detail-card:hover { border-color: var(--border-bright); }
-    .organ-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    .organ-detail-icon { font-size: 24px; }
-    .organ-detail-title { font-size: 18px; font-weight: 700; }
-    .organ-detail-desc { font-size: 14px; color: var(--text-2); margin-bottom: 16px; line-height: 1.6; }
-    .organ-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-    .organ-tag {
-      padding: 4px 12px;
-      background: var(--primary-dim);
-      border: 1px solid rgba(34,211,238,0.2);
-      border-radius: 100px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--primary);
-    }
-    .organ-tag.green { background: var(--green-dim); border-color: rgba(52,211,153,0.2); color: var(--green); }
-    .organ-tag.amber { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.2); color: var(--amber); }
-    .organ-tag.rose { background: rgba(251,113,133,0.1); border-color: rgba(251,113,133,0.2); color: var(--rose); }
-    .organ-tag.accent { background: var(--accent-dim); border-color: rgba(129,140,248,0.2); color: var(--accent); }
+  /* ===== SECTIONS ===== */
+  section { padding: 100px 24px; position: relative; }
+  .section-inner { max-width: 1200px; margin: 0 auto; }
+  .section-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--accent); margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: clamp(26px, 5vw, 40px); font-weight: 800;
+    letter-spacing: -0.5px; margin-bottom: 16px;
+  }
+  .section-desc {
+    font-size: 15px; color: var(--text-secondary);
+    max-width: 560px; margin-bottom: 48px; line-height: 1.7;
+  }
 
-    /* ── Evolution ── */
-    .evolution { background: var(--bg-2); }
-    .evolution-flow {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      flex-wrap: wrap;
-      margin: 48px 0;
-    }
-    .evo-step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      min-width: 140px;
-      position: relative;
-    }
-    .evo-circle {
-      width: 72px; height: 72px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      margin-bottom: 12px;
-      position: relative;
-      z-index: 1;
-    }
-    .evo-circle.monitor { background: var(--primary-dim); border: 2px solid rgba(34,211,238,0.4); }
-    .evo-circle.extract { background: rgba(129,140,248,0.12); border: 2px solid rgba(129,140,248,0.4); }
-    .evo-circle.generate { background: var(--green-dim); border: 2px solid rgba(52,211,153,0.4); }
-    .evo-circle.test { background: rgba(251,191,36,0.1); border: 2px solid rgba(251,191,36,0.4); }
-    .evo-circle.adopt { background: rgba(251,113,133,0.1); border: 2px solid rgba(251,113,133,0.4); }
-    .evo-step-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-    .evo-step-desc { font-size: 12px; color: var(--text-3); max-width: 120px; }
-    .evo-arrow {
-      width: 60px; height: 2px;
-      background: linear-gradient(90deg, var(--border-bright), var(--text-3));
-      position: relative;
-      top: -24px;
-    }
+  /* ===== FEATURES GRID ===== */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .feature-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 18px;
+    background: var(--accent-light); color: var(--accent);
+  }
+  .feature-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .feature-desc { font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; }
 
-    /* ── Tech Stack ── */
-    .tech-stack { }
-    .tech-logos {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      margin-top: 40px;
-    }
-    .tech-logo-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      transition: var(--transition);
-    }
-    .tech-logo-card:hover { border-color: var(--primary); transform: translateY(-2px); }
-    .tech-logo-icon { font-size: 32px; }
-    .tech-logo-name { font-size: 14px; font-weight: 700; }
-    .tech-logo-desc { font-size: 12px; color: var(--text-3); text-align: center; }
+  /* ===== HOW IT WORKS ===== */
+  .steps {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 24px; counter-reset: step;
+  }
+  .step {
+    position: relative; padding-top: 20px;
+  }
+  .step::before {
+    counter-increment: step; content: "0" counter(step);
+    font-size: 48px; font-weight: 900; line-height: 1;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; opacity: 0.35;
+    position: absolute; top: 0; left: 0;
+  }
+  .step-title { font-size: 16px; font-weight: 700; margin: 8px 0 6px; }
+  .step-desc { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
 
-    /* ── Model Support ── */
-    .models { background: var(--bg-2); }
-    .models-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-top: 40px;
-    }
-    .model-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: var(--transition);
-    }
-    .model-card:hover { border-color: var(--border-bright); background: rgba(17,24,39,0.95); }
-    .model-icon { font-size: 28px; }
-    .model-info h4 { font-size: 15px; font-weight: 700; }
-    .model-info span { font-size: 12px; color: var(--text-3); }
+  /* ===== CTA ===== */
+  .cta {
+    text-align: center; padding: 120px 24px;
+    position: relative; overflow: hidden;
+  }
+  .cta::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, var(--accent-light) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cta h2 { font-size: clamp(28px, 5vw, 44px); font-weight: 800; margin-bottom: 16px; position: relative; }
+  .cta p { font-size: 16px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 32px; position: relative; }
+  .cta .btn { font-size: 15px; padding: 14px 36px; border-radius: 14px; }
 
-    /* ── Roadmap ── */
-    .roadmap { }
-    .roadmap-timeline {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
-      margin-top: 48px;
-      position: relative;
-    }
-    .roadmap-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      position: relative;
-      transition: var(--transition);
-    }
-    .roadmap-item:hover { border-color: rgba(34,211,238,0.3); }
-    .roadmap-phase {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 12px;
-      letter-spacing: 0.5px;
-    }
-    .roadmap-title { font-size: 18px; font-weight: 800; margin-bottom: 12px; }
-    .roadmap-desc { font-size: 14px; color: var(--text-2); margin-bottom: 16px; line-height: 1.6; }
-    .roadmap-items { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .roadmap-items li {
-      font-size: 13px;
-      color: var(--text-3);
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    .roadmap-items li::before {
-      content: '✓';
-      color: var(--green);
-      font-weight: 700;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
+  /* ===== DOWNLOAD ===== */
+  .download-section {
+    text-align: center; padding: 100px 24px;
+    position: relative;
+  }
+  .download-section .section-inner {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .download-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 18px 48px; border-radius: 16px;
+    font-size: 18px; font-weight: 700; text-decoration: none;
+    background: var(--gradient-primary); color: #fff;
+    box-shadow: 0 6px 32px var(--accent-glow);
+    transition: all 0.3s; letter-spacing: -0.3px;
+  }
+  .download-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 44px var(--accent-glow);
+  }
+  .download-btn .dl-icon {
+    font-size: 22px;
+  }
+  .version-info {
+    margin-top: 16px; font-size: 15px; font-weight: 600;
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .version-info .version-badge {
+    display: inline-block; padding: 3px 12px; border-radius: 100px;
+    background: var(--accent-light); font-size: 13px;
+  }
+  .platform-tags {
+    display: flex; gap: 12px; margin-top: 20px;
+    justify-content: center; flex-wrap: wrap;
+  }
+  .platform-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 18px; border-radius: 100px;
+    font-size: 12.5px; font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: all 0.2s;
+  }
+  .platform-tag:hover {
+    border-color: var(--accent); color: var(--accent);
+  }
 
-    /* ── CTA ── */
-    .cta-section {
-      background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(129,140,248,0.08));
-      border: 1px solid rgba(34,211,238,0.15);
-      border-radius: var(--radius-xl);
-      padding: 80px 40px;
-      text-align: center;
-      margin: 40px 0 80px;
-    }
-    .cta-section h2 {
-      font-size: clamp(28px, 4vw, 44px);
-      font-weight: 900;
-      letter-spacing: -1.5px;
-      margin-bottom: 16px;
-    }
-    .cta-section p { font-size: 18px; color: var(--text-2); margin-bottom: 32px; max-width: 560px; margin-left: auto; margin-right: auto; }
+  /* ===== FOOTER ===== */
+  footer {
+    background: var(--footer-bg); padding: 48px 24px 32px;
+    color: var(--text-tertiary); font-size: 13px;
+  }
+  .footer-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a {
+    color: var(--text-tertiary); text-decoration: none; transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--accent); }
 
-    /* ── Footer ── */
-    .footer {
-      border-top: 1px solid var(--border);
-      padding: 48px 0;
-      background: var(--bg-2);
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .nav-links.open {
+      display: flex; flex-direction: column; position: absolute;
+      top: 64px; left: 0; right: 0; background: var(--nav-bg);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 20px 24px; gap: 16px;
+      border-bottom: 1px solid var(--border-subtle);
     }
-    .footer-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 24px;
-    }
-    .footer-logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; }
-    .footer-copy { font-size: 13px; color: var(--text-3); }
-    .footer-links { display: flex; gap: 24px; }
-    .footer-links a { font-size: 13px; color: var(--text-3); transition: var(--transition); }
-    .footer-links a:hover { color: var(--primary); }
+    .hamburger { display: block; }
+    .features-grid { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; }
+    .hero { padding-top: 100px; }
+  }
 
-    /* ── Responsive ── */
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .nav-mobile { display: block; }
-      .hero h1 { letter-spacing: -1.5px; }
-      .hero-stats { gap: 32px; }
-      .organ-brain-row { flex-direction: column; }
-      .organ-nerve-row { gap: 10px; }
-      .organ-connector { display: none; }
-      .organ-connector-down { display: none; }
-      .evolution-flow { gap: 0; }
-      .evo-arrow { display: none; }
-      .evo-step { min-width: 100px; }
-      .cta-section { padding: 48px 24px; }
-      .footer-inner { flex-direction: column; text-align: center; }
-    }
+  /* ===== SCROLL ANIMATIONS ===== */
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
 
-    /* ── Animations ── */
-    .fade-up {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-    .fade-up.visible { opacity: 1; transform: translateY(0); }
+  /* Selection */
+  ::selection { background: var(--accent); color: #fff; }
 
-    /* ── Glassmorphism panels ── */
-    .glass { background: rgba(17,24,39,0.7); backdrop-filter: blur(16px); border: 1px solid var(--border); }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-    /* ── Divider ── */
-    .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border-bright), transparent); margin: 0; }
-
-    /* ── Comparison ── */
-    .comparison { background: var(--bg-2); }
-    .comparison-table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      margin-top: 40px;
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    .comparison-table th {
-      padding: 16px 20px;
-      background: rgba(17,24,39,0.9);
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-3);
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .comparison-table th:first-child { border-radius: var(--radius-lg) 0 0 0; }
-    .comparison-table th:last-child { border-radius: 0 var(--radius-lg) 0 0; }
-    .comparison-table td {
-      padding: 14px 20px;
-      font-size: 14px;
-      color: var(--text-2);
-      border-bottom: 1px solid var(--border);
-      background: rgba(10,15,30,0.6);
-    }
-    .comparison-table tr:last-child td { border-bottom: none; }
-    .comparison-table tr:hover td { background: rgba(17,24,39,0.8); }
-    .comparison-table .check { color: var(--green); font-weight: 700; }
-    .comparison-table .cross { color: var(--text-3); }
-    .comparison-table .highlight { color: var(--primary); font-weight: 700; }
-    .comparison-table .name-col { font-weight: 600; color: var(--text); }
-  </style>
+  /* Focus */
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+</style>
 </head>
 <body>
 
-<div class="grid-bg"></div>
+<!-- Aurora background -->
+<div class="aurora-bg"></div>
 
-<!-- ═══════════════════════ NAVIGATION ═══════════════════════ -->
-<nav class="nav" id="nav">
-  <div class="container nav-inner">
-    <a href="#" class="nav-logo">
-      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="16" r="14" stroke="#22d3ee" stroke-width="1.5" fill="none"/>
-        <circle cx="16" cy="16" r="8" stroke="#818cf8" stroke-width="1.5" fill="none"/>
-        <circle cx="16" cy="16" r="3" fill="#22d3ee"/>
-        <line x1="16" y1="2" x2="16" y2="8" stroke="#22d3ee" stroke-width="1.5"/>
-        <line x1="16" y1="24" x2="16" y2="30" stroke="#22d3ee" stroke-width="1.5"/>
-        <line x1="2" y1="16" x2="8" y2="16" stroke="#22d3ee" stroke-width="1.5"/>
-        <line x1="24" y1="16" x2="30" y2="16" stroke="#22d3ee" stroke-width="1.5"/>
-      </svg>
-      <span>OpenNewt</span>
-    </a>
-    <div class="nav-links">
-      <a href="#problem">痛点</a>
-      <a href="#organ">器官系统</a>
-      <a href="#evolution">进化引擎</a>
-      <a href="#tech">技术架构</a>
-      <a href="#roadmap">路线图</a>
-      <a href="#contact">联系我们</a>
-    </div>
-    <button class="nav-cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">预约演示</button>
-    <div class="nav-mobile" onclick="document.querySelector('.nav-links').classList.toggle('mobile-open')">
-      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="3" y1="6" x2="21" y2="6"/>
-        <line x1="3" y1="12" x2="21" y2="12"/>
-        <line x1="3" y1="18" x2="21" y2="18"/>
-      </svg>
+<!-- Navigation -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">OpenNewt</div>
+    <button class="hamburger" aria-label="菜单" onclick="toggleMenu()">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#features" data-i18n="nav.features">特性</a>
+      <a href="#how" data-i18n="nav.how">工作原理</a>
+      <a href="#download" data-i18n="nav.download">下载</a>
+      <a href="https://github.com/opennewt" target="_blank" rel="noopener">GitHub</a>
+      <a href="#cta" data-i18n="nav.start">开始使用</a>
+      <select class="lang-select" id="langSelect" aria-label="语言"><option value="zh">中文</option><option value="en">EN</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="ru">Русский</option></select>
+      <button class="theme-btn" aria-label="切换主题" onclick="toggleTheme()" id="themeBtn">&#9789;</button>
     </div>
   </div>
 </nav>
 
-<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<!-- Hero -->
 <section class="hero">
-  <div class="hero-badge">
-    <span class="dot"></span>
-    自主进化 · 器官化架构 · 开放生态
-  </div>
-  <h1>
-    下一个十年<br/>
-    <span class="line-gradient">操作系统的新物种</span>
-  </h1>
-  <p class="hero-sub">
-    OpenNewt OS 重新定义 AI Agent — 通过器官化架构赋予 Agent 类人的感知、思考与行动能力。<br/>
-    不是工具，是会进化的数字生命体。
-  </p>
-  <div class="hero-actions">
-    <button class="btn-primary" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
-      预约演示
-    </button>
-    <button class="btn-outline" onclick="document.getElementById('organ').scrollIntoView({behavior:'smooth'})">
-      了解架构 →
-    </button>
-  </div>
-  <div class="hero-stats">
-    <div class="hero-stat">
-      <div class="hero-stat-num">9</div>
-      <div class="hero-stat-label">器官子系统</div>
+  <div class="hero-content reveal">
+    <div class="hero-badge">
+      <span class="dot"></span> <span data-i18n="hero.badge">v0.2.0 已发布</span>
     </div>
-    <div class="hero-stat">
-      <div class="hero-stat-num">170+</div>
-      <div class="hero-stat-label">可进化技能</div>
-    </div>
-    <div class="hero-stat">
-      <div class="hero-stat-num">∞</div>
-      <div class="hero-stat-label">跨平台支持</div>
-    </div>
-    <div class="hero-stat">
-      <div class="hero-stat-num">5G</div>
-      <div class="hero-stat-label">进化闭环</div>
+    <h1>
+      <span data-i18n="hero.line1">用</span> <span class="gradient-text">AI Agent</span><br><span data-i18n="hero.line2">重塑你的工作流</span>
+    </h1>
+    <p data-i18n="hero.desc">
+      OpenNewt 是下一代模块化 AI Agent 平台。连接任意 LLM，
+      组合技能模块，让 AI 真正理解你的需求并自主执行任务。
+    </p>
+    <div class="hero-buttons">
+      <a href="#cta" class="btn btn-primary" data-i18n="hero.cta1">免费开始</a>
+      <a href="#features" class="btn btn-secondary" data-i18n="hero.cta2">探索特性 &#8594;</a>
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- ═══════════════════════ PROBLEM ═══════════════════════ -->
-<section class="problem" id="problem">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-label">核心痛点</div>
-      <h2 class="section-title">为什么现有 Agent 始终不够好用？</h2>
-      <p class="section-sub">当前主流 Agent 工具在架构层面存在系统性缺陷，这些问题不是修修补补能解决的。</p>
-    </div>
-    <div class="problem-grid">
-      <div class="problem-card fade-up">
-        <div class="problem-icon">🔧</div>
-        <h3>能力碎片化</h3>
-        <p>Claude Code 只能写代码，OpenHands 只能做浏览器自动化。每个工具只解决一个问题，用户在多个工具间疲于切换。</p>
-      </div>
-      <div class="problem-card fade-up">
-        <div class="problem-icon">🧠</div>
-        <h3>记忆断层</h3>
-        <p>每次对话 Agent 从零开始，不知道用户的偏好、项目的上下文、历史的决策理由。同样的错误犯两遍。</p>
-      </div>
-      <div class="problem-card fade-up">
-        <div class="problem-icon">📈</div>
-        <h3>进化停滞</h3>
-        <p>模型参数再大也无法弥补策略的缺失。Agent 无法从错误中学习，无法把成功的经验固化为可复用的能力。</p>
-      </div>
-      <div class="problem-card fade-up">
-        <div class="problem-icon">🔒</div>
-        <h3>平台锁定</h3>
-        <p>Claude Code 只跑命令行，Cursor 只在 VS Code 里。想换个环境？对不起，从头再来。</p>
-      </div>
-      <div class="problem-card fade-up">
-        <div class="problem-icon">🌏</div>
-        <h3>生态割裂</h3>
-        <p>微信、飞书、钉钉、企业微信——每个平台都要单独集成。没有统一入口，没有统一记忆。</p>
-      </div>
-      <div class="problem-card fade-up">
-        <div class="problem-icon">👁️</div>
-        <h3>视觉缺失</h3>
-        <p>大多数 Agent 只能处理文本和代码，无法感知屏幕内容，无法操作 GUI 软件，无法理解文档的视觉结构。</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ═══════════════════════ ORGAN SYSTEM ═══════════════════════ -->
-<section class="organ-system" id="organ">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-label">核心架构</div>
-      <h2 class="section-title">器官化架构 — 像人一样思考与行动</h2>
-      <p class="section-sub">OpenNewt OS 将 Agent 拆解为 9 大器官，每个器官独立进化，统一受大脑协调控制。</p>
-    </div>
-
-    <!-- Diagram -->
-    <div class="organ-diagram fade-up">
-      <!-- Brain + Nerve row -->
-      <div class="organ-brain-row">
-        <div class="organ-center">
-          <div class="organ-center-icon">🧠</div>
-          <div class="organ-center-name">大脑 Brain</div>
-          <div class="organ-center-sub">协调 · 记忆 · 思维 · 进化 · 安全</div>
+<!-- Features -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-label reveal" data-i18n="features.label">核心特性</div>
+    <h2 class="section-title reveal" data-i18n="features.title">一切为了让 AI 真正工作</h2>
+    <p class="section-desc reveal" data-i18n="features.desc">
+      OpenNewt 采用模块化架构，每个能力都是可插拔的模块。你可以像搭乐高一样组装自己的 AI Agent。
+    </p>
+    <div class="features-grid">
+      <div class="glass-card reveal">
+        <div class="feature-icon">&#9881;</div>
+        <div class="feature-title" data-i18n="features.f1.title">模块化架构</div>
+        <div class="feature-desc" data-i18n="features.f1.desc">
+          每个 AI 能力都是独立模块 — 聊天、工具调用、记忆、规划。按需组合，灵活扩展，无需修改核心代码。
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;margin:8px 0;">
-        <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border-bright));"></div>
-        <span style="font-size:12px;color:var(--text-3);">协调控制</span>
-        <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--border-bright),transparent);"></div>
-      </div>
-      <div class="organ-nerve-row">
-        <div class="organ-card">
-          <span class="organ-icon">🫁</span>
-          <div class="organ-name">神经系统</div>
-          <div class="organ-role">条件反射</div>
+      <div class="glass-card reveal">
+        <div class="feature-icon">&#9733;</div>
+        <div class="feature-title" data-i18n="features.f2.title">多模型支持</div>
+        <div class="feature-desc" data-i18n="features.f2.desc">
+          无缝接入 OpenAI、Anthropic、DeepSeek、Google 等主流 LLM，一键切换模型，自由选择最适合的引擎。
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;margin:8px 0;">
-        <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border-bright));"></div>
-        <span style="font-size:12px;color:var(--text-3);">感知 & 行动</span>
-        <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--border-bright),transparent);"></div>
-      </div>
-      <!-- Sensing organs -->
-      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;">
-        <div class="organ-card">
-          <span class="organ-icon">👁️</span>
-          <div class="organ-name">眼睛</div>
-          <div class="organ-role">视觉理解</div>
-        </div>
-        <div class="organ-card">
-          <span class="organ-icon">👂</span>
-          <div class="organ-name">耳朵</div>
-          <div class="organ-role">语音输入</div>
-        </div>
-        <div class="organ-card">
-          <span class="organ-icon">🤲</span>
-          <div class="organ-name">触觉</div>
-          <div class="organ-role">环境感知</div>
-        </div>
-        <div class="organ-card">
-          <span class="organ-icon">👃</span>
-          <div class="organ-name">鼻子</div>
-          <div class="organ-role">信息嗅探</div>
+      <div class="glass-card reveal">
+        <div class="feature-icon">&#128268;</div>
+        <div class="feature-title" data-i18n="features.f3.title">工具链集成</div>
+        <div class="feature-desc" data-i18n="features.f3.desc">
+          内置文件系统、浏览器、Shell 执行器等工具模块。Agent 可以读文件、上网搜索、执行代码，真正自主完成复杂任务。
         </div>
       </div>
-      <!-- Action organs -->
-      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
-        <div class="organ-card">
-          <span class="organ-icon">✋</span>
-          <div class="organ-name">手</div>
-          <div class="organ-role">工具调度</div>
-        </div>
-        <div class="organ-card">
-          <span class="organ-icon">🦶</span>
-          <div class="organ-name">脚</div>
-          <div class="organ-role">远程执行</div>
-        </div>
-        <div class="organ-card">
-          <span class="organ-icon">👄</span>
-          <div class="organ-name">嘴巴</div>
-          <div class="organ-role">多模输出</div>
+      <div class="glass-card reveal">
+        <div class="feature-icon">&#128190;</div>
+        <div class="feature-title" data-i18n="features.f4.title">持久记忆</div>
+        <div class="feature-desc" data-i18n="features.f4.desc">
+          向量数据库驱动的长期记忆系统。Agent 记住你的偏好、历史对话和项目上下文，越用越懂你。
         </div>
       </div>
-    </div>
-
-    <!-- Organ detail cards -->
-    <div class="organ-detail-grid">
-      <!-- Brain -->
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">🧠</span>
-          <span class="organ-detail-title">大脑 Brain</span>
-        </div>
-        <p class="organ-detail-desc">协调中心、决策中心、进化中心、安全中心。统一调度所有器官，负责任务规划、意图理解、记忆管理与策略优化。</p>
-        <div class="organ-tags">
-          <span class="organ-tag">意图理解</span>
-          <span class="organ-tag">任务拆解</span>
-          <span class="organ-tag">三层记忆</span>
-          <span class="organ-tag">A/B测试</span>
-          <span class="organ-tag">安全护栏</span>
+      <div class="glass-card reveal">
+        <div class="feature-icon">&#127760;</div>
+        <div class="feature-title" data-i18n="features.f5.title">跨平台桌面应用</div>
+        <div class="feature-desc" data-i18n="features.f5.desc">
+          基于 Electron 的桌面客户端，Windows / macOS / Linux 全平台支持。原生体验，离线可用，数据完全由你掌控。
         </div>
       </div>
-      <!-- Eye -->
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">👁️</span>
-          <span class="organ-detail-title">眼睛 Eye</span>
-        </div>
-        <p class="organ-detail-desc">视觉感知与理解。OCR 识别文档、截图分析、GUI 软件操作、视觉回归测试。赋予 Agent 看见屏幕的能力。</p>
-        <div class="organ-tags">
-          <span class="organ-tag green">OCR识别</span>
-          <span class="organ-tag green">截图分析</span>
-          <span class="organ-tag green">键鼠模拟</span>
-          <span class="organ-tag green">视觉QA</span>
-        </div>
-      </div>
-      <!-- Ear -->
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">👂</span>
-          <span class="organ-detail-title">耳朵 Ear</span>
-        </div>
-        <p class="organ-detail-desc">语音输入与声纹感知。ASR 语音转文字、实时通话、环境音检测、噪音分离。让语音成为第一交互入口。</p>
-        <div class="organ-tags">
-          <span class="organ-tag amber">ASR语音识别</span>
-          <span class="organ-tag amber">实时通话</span>
-          <span class="organ-tag amber">环境音检测</span>
-        </div>
-      </div>
-      <!-- Nose -->
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">👃</span>
-          <span class="organ-detail-title">鼻子 Nose</span>
-        </div>
-        <p class="organ-detail-desc">信息嗅探与环境感知。实时抓取网页/API 变更、监控服务健康、检测异常波动。先于用户发现问题。</p>
-        <div class="organ-tags">
-          <span class="organ-tag rose">网络爬取</span>
-          <span class="organ-tag rose">API监控</span>
-          <span class="organ-tag rose">异常预警</span>
-        </div>
-      </div>
-      <!-- Hand -->
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">✋</span>
-          <span class="organ-detail-title">手 Hand</span>
-        </div>
-        <p class="organ-detail-desc">工具调度与操作执行。终端命令、文件系统、Git 操作、API 调用、Docker 管理。Agent 的「动手能力」。</p>
-        <div class="organ-tags">
-          <span class="organ-tag accent">终端命令</span>
-          <span class="organ-tag accent">文件操作</span>
-          <span class="organ-tag accent">Git管理</span>
-          <span class="organ-tag accent">Docker</span>
-          <span class="organ-tag accent">MCP扩展</span>
-        </div>
-      </div>
-      <!-- Foot -->
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">🦶</span>
-          <span class="organ-detail-title">脚 Foot</span>
-        </div>
-        <p class="organ-detail-desc">远程执行与平台穿透。跨服务器操作、云端任务提交、CI/CD 触发、远程脚本执行。Agent 的「腿」。</p>
-        <div class="organ-tags">
-          <span class="organ-tag">SSH远程</span>
-          <span class="organ-tag">CI/CD集成</span>
-          <span class="organ-tag">Webhook触发</span>
-        </div>
-      </div>
-      <!-- Mouth -->
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">👄</span>
-          <span class="organ-detail-title">嘴巴 Mouth</span>
-        </div>
-        <p class="organ-detail-desc">多模态输出与表达。TTS 语音回复、图表生成、文档导出、代码生成、图片生成。Agent 的「表达能力」。</p>
-        <div class="organ-tags">
-          <span class="organ-tag green">TTS语音</span>
-          <span class="organ-tag green">文字回复</span>
-          <span class="organ-tag green">文档生成</span>
-          <span class="organ-tag green">图表可视化</span>
-        </div>
-      </div>
-      <!-- Touch -->
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">🤲</span>
-          <span class="organ-detail-title">触觉 Touch</span>
-        </div>
-        <p class="organ-detail-desc">环境感知与状态监控。文件系统变化监听、系统健康检查、工具可用性探测、上下文环境检测。</p>
-        <div class="organ-tags">
-          <span class="organ-tag amber">文件监听</span>
-          <span class="organ-tag amber">健康监控</span>
-          <span class="organ-tag amber">工具探测</span>
-        </div>
-      </div>
-      <!-- Nerve -->
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">🫁</span>
-          <span class="organ-detail-title">神经系统 Nerve</span>
-        </div>
-        <p class="organ-detail-desc">条件反射与自动触发。不需要大脑决策的即时响应：超时自动重试、错误自动告警、文件变化自动构建。</p>
-        <div class="organ-tags">
-          <span class="organ-tag rose">自动重试</span>
-          <span class="organ-tag rose">异常告警</span>
-          <span class="organ-tag rose">热加载</span>
-          <span class="organ-tag rose">心跳检测</span>
+      <div class="glass-card reveal">
+        <div class="feature-icon">&#128275;</div>
+        <div class="feature-title" data-i18n="features.f6.title">开源 & 隐私优先</div>
+        <div class="feature-desc" data-i18n="features.f6.desc">
+          完全开源（MIT 协议）。你的 API Key、对话数据、配置文件全部存储在本地，不上传任何数据到第三方服务器。
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- ═══════════════════════ EVOLUTION ENGINE ═══════════════════════ -->
-<section class="evolution" id="evolution">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-label">核心能力</div>
-      <h2 class="section-title">进化引擎 — Agent 越用越聪明</h2>
-      <p class="section-sub">每一次执行都是学习机会。通过 Monitor → Extract → Generate → Test → Adopt 五步闭环，Agent 自动从经验中进化。</p>
-    </div>
-
-    <div class="evolution-flow fade-up">
-      <div class="evo-step">
-        <div class="evo-circle monitor">📡</div>
-        <div class="evo-step-name">Monitor</div>
-        <div class="evo-step-desc">轨迹收集</div>
+<!-- Download -->
+<section id="download" class="download-section">
+  <div class="section-inner">
+    <div class="section-label reveal" data-i18n="download.label">获取 OpenNewt</div>
+    <h2 class="section-title reveal" data-i18n="download.title">下载桌面客户端</h2>
+    <p class="section-desc reveal" data-i18n="download.desc">
+      支持 Windows、macOS 和 Linux。从 GitHub Releases 获取最新版本。
+    </p>
+    <div class="reveal">
+      <a href="https://github.com/opennewt/releases/latest" target="_blank" rel="noopener" class="download-btn">
+        <span class="dl-icon">&#11015;</span> <span data-i18n="download.btn">下载 OpenNewt</span>
+      </a>
+      <div class="version-info" id="versionInfo">
+        <span style="opacity:0.7;" data-i18n="download.version_loading">正在获取版本号...</span>
       </div>
-      <div class="evo-arrow"></div>
-      <div class="evo-step">
-        <div class="evo-circle extract">🔍</div>
-        <div class="evo-step-name">Extract</div>
-        <div class="evo-step-desc">经验提炼</div>
-      </div>
-      <div class="evo-arrow"></div>
-      <div class="evo-step">
-        <div class="evo-circle generate">⚙️</div>
-        <div class="evo-step-name">Generate</div>
-        <div class="evo-step-desc">技能生成</div>
-      </div>
-      <div class="evo-arrow"></div>
-      <div class="evo-step">
-        <div class="evo-circle test">🧪</div>
-        <div class="evo-step-name">Test</div>
-        <div class="evo-step-desc">A/B验证</div>
-      </div>
-      <div class="evo-arrow"></div>
-      <div class="evo-step">
-        <div class="evo-circle adopt">🚀</div>
-        <div class="evo-step-name">Adopt</div>
-        <div class="evo-step-desc">策略优化</div>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:48px;">
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">📊</span>
-          <span class="organ-detail-title">轨迹收集</span>
-        </div>
-        <p class="organ-detail-desc">完整记录每次任务的执行路径：用了哪些工具、调用顺序、耗时、结果。数据驱动的进化基础。</p>
-      </div>
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">🧬</span>
-          <span class="organ-detail-title">技能固化</span>
-        </div>
-        <p class="organ-detail-desc">成功的执行路径自动抽象为可复用技能（Skill）。下次遇到类似任务，直接调用，无需重新规划。</p>
-      </div>
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">🔬</span>
-          <span class="organ-detail-title">感知进化</span>
-        </div>
-        <p class="organ-detail-desc">每个器官的感知精度独立进化：眼睛的 OCR 随使用越来越准，耳朵的 ASR 随对话越来越懂你。</p>
+      <div class="platform-tags">
+        <span class="platform-tag">&#128187; <span data-i18n="download.platform_win">Windows</span></span>
+        <span class="platform-tag">&#127822; <span data-i18n="download.platform_mac">macOS</span></span>
+        <span class="platform-tag">&#128039; <span data-i18n="download.platform_linux">Linux</span></span>
       </div>
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- ═══════════════════════ TECH STACK ═══════════════════════ -->
-<section class="tech-stack" id="tech">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-label">技术架构</div>
-      <h2 class="section-title">开放架构 · 全模型支持</h2>
-      <p class="section-sub">不绑定任何一家模型，不锁定任何一座平台。开放接入，随心切换。</p>
-    </div>
-
-    <div class="section-label" style="margin-top:32px;">模型支持</div>
-    <div class="models-grid fade-up">
-      <div class="model-card">
-        <span class="model-icon">🤖</span>
-        <div class="model-info"><h4>OpenAI</h4><span>GPT-4o / o1 / o3</span></div>
-      </div>
-      <div class="model-card">
-        <span class="model-icon">🧠</span>
-        <div class="model-info"><h4>Claude</h4><span>Claude 3.5 / 3.7</span></div>
-      </div>
-      <div class="model-card">
-        <span class="model-icon">🌐</span>
-        <div class="model-info"><h4>Gemini</h4><span>Gemini 2.0 / Flash</span></div>
-      </div>
-      <div class="model-card">
-        <span class="model-icon">🐉</span>
-        <div class="model-info"><h4>DeepSeek</h4><span>V3 / R1 / Chat</span></div>
-      </div>
-      <div class="model-card">
-        <span class="model-icon">☁️</span>
-        <div class="model-info"><h4>智谱 GLM</h4><span>GLM-4 / GLM-4V</span></div>
-      </div>
-      <div class="model-card">
-        <span class="model-icon">🌸</span>
-        <div class="model-info"><h4>Kimi</h4><span>Moonshot V1 / V2</span></div>
-      </div>
-      <div class="model-card">
-        <span class="model-icon">🦙</span>
-        <div class="model-info"><h4>本地模型</h4><span>Ollama / vLLM</span></div>
-      </div>
-      <div class="model-card">
-        <span class="model-icon">✨</span>
-        <div class="model-info"><h4>更多...</h4><span>Groq / Cohere / 火山</span></div>
-      </div>
-    </div>
-
-    <div class="section-label" style="margin-top:48px;">技术栈</div>
-    <div class="tech-logos fade-up">
-      <div class="tech-logo-card">
-        <div class="tech-logo-icon">🐍</div>
-        <div class="tech-logo-name">Python 3.12+</div>
-        <div class="tech-logo-desc">核心运行时</div>
-      </div>
-      <div class="tech-logo-card">
-        <div class="tech-logo-icon">⚡</div>
-        <div class="tech-logo-name">FastAPI</div>
-        <div class="tech-logo-desc">API 网关 & Web</div>
-      </div>
-      <div class="tech-logo-card">
-        <div class="tech-logo-icon">🗄️</div>
-        <div class="tech-logo-name">SQLite + Vector</div>
-        <div class="tech-logo-desc">记忆存储</div>
-      </div>
-      <div class="tech-logo-card">
-        <div class="tech-logo-icon">🖥️</div>
-        <div class="tech-logo-name">Tauri v2</div>
-        <div class="tech-logo-desc">跨平台桌面 GUI</div>
-      </div>
-      <div class="tech-logo-card">
-        <div class="tech-logo-icon">🔊</div>
-        <div class="tech-logo-name">Whisper</div>
-        <div class="tech-logo-desc">语音识别引擎</div>
-      </div>
-      <div class="tech-logo-card">
-        <div class="tech-logo-icon">👁️</div>
-        <div class="tech-logo-name">EasyOCR</div>
-        <div class="tech-logo-desc">视觉识别引擎</div>
-      </div>
-      <div class="tech-logo-card">
-        <div class="tech-logo-icon">🔗</div>
-        <div class="tech-logo-name">MCP 协议</div>
-        <div class="tech-logo-desc">工具扩展标准</div>
-      </div>
-      <div class="tech-logo-card">
-        <div class="tech-logo-icon">🐳</div>
-        <div class="tech-logo-name">Docker</div>
-        <div class="tech-logo-desc">环境隔离</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ═══════════════════════ COMPARISON ═══════════════════════ -->
-<section class="comparison" id="comparison">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-label">竞品对比</div>
-      <h2 class="section-title">OpenNewt OS 的差异化优势</h2>
-    </div>
-    <div style="overflow-x:auto;">
-      <table class="comparison-table fade-up">
-        <thead>
-          <tr>
-            <th>能力维度</th>
-            <th>Claude Code</th>
-            <th>Hermes Agent</th>
-            <th>Devin</th>
-            <th class="highlight">OpenNewt OS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="name-col">器官化架构</td>
-            <td class="cross">—</td>
-            <td class="cross">—</td>
-            <td class="cross">—</td>
-            <td class="highlight">✅ 9大器官</td>
-          </tr>
-          <tr>
-            <td class="name-col">三层记忆系统</td>
-            <td class="check">✅</td>
-            <td class="check">✅</td>
-            <td class="check">✅</td>
-            <td class="highlight">✅ 索引+上下文+蒸馏</td>
-          </tr>
-          <tr>
-            <td class="name-col">进化引擎闭环</td>
-            <td class="cross">—</td>
-            <td class="check">✅</td>
-            <td class="check">✅</td>
-            <td class="highlight">✅ Monitor→Adopt 5步</td>
-          </tr>
-          <tr>
-            <td class="name-col">视觉感知（GUI）</td>
-            <td class="cross">—</td>
-            <td class="cross">—</td>
-            <td class="check">✅</td>
-            <td class="highlight">✅ OCR + 键鼠模拟</td>
-          </tr>
-          <tr>
-            <td class="name-col">语音交互</td>
-            <td class="cross">—</td>
-            <td class="cross">—</td>
-            <td class="cross">—</td>
-            <td class="highlight">✅ ASR + TTS + 通话</td>
-          </tr>
-          <tr>
-            <td class="name-col">跨平台 GUI</td>
-            <td class="check">✅ VS Code</td>
-            <td class="cross">—</td>
-            <td class="cross">—</td>
-            <td class="highlight">✅ Win/Mac/Linux</td>
-          </tr>
-          <tr>
-            <td class="name-col">微信/飞书/钉钉</td>
-            <td class="cross">—</td>
-            <td class="check">✅</td>
-            <td class="cross">—</td>
-            <td class="highlight">✅ 全平台覆盖</td>
-          </tr>
-          <tr>
-            <td class="name-col">神经系统（条件反射）</td>
-            <td class="cross">—</td>
-            <td class="cross">—</td>
-            <td class="cross">—</td>
-            <td class="highlight">✅ 自动触发</td>
-          </tr>
-          <tr>
-            <td class="name-col">全模型 API 支持</td>
-            <td class="check">✅ Anthropic</td>
-            <td class="check">✅ 多家</td>
-            <td class="cross">—</td>
-            <td class="highlight">✅ 10+ 模型商</td>
-          </tr>
-          <tr>
-            <td class="name-col">技能市场</td>
-            <td class="cross">—</td>
-            <td class="check">✅</td>
-            <td class="cross">—</td>
-            <td class="highlight">✅ 计划中</td>
-          </tr>
-          <tr>
-            <td class="name-col">开源计划</td>
-            <td class="cross">闭源</td>
-            <td class="check">✅ MIT</td>
-            <td class="cross">闭源</td>
-            <td class="highlight">✅ 开源核心</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ═══════════════════════ ROADMAP ═══════════════════════ -->
-<section class="roadmap" id="roadmap">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-label">发展路线</div>
-      <h2 class="section-title">从 0 到 1，稳步推进</h2>
-      <p class="section-sub">每一步都有明确的里程碑，每个里程碑都有可验证的交付物。</p>
-    </div>
-    <div class="roadmap-timeline">
-      <div class="roadmap-item fade-up">
-        <div class="roadmap-phase">PHASE 1 — Q2-Q3 2026</div>
-        <div class="roadmap-title">内核构建</div>
-        <p class="roadmap-desc">构建 Agent 内核，完成器官系统的底层架构，跑通核心场景。</p>
-        <ul class="roadmap-items">
-          <li>Agent Loop 多模式（独立/协作/团队）</li>
-          <li>三层记忆架构（索引/上下文/蒸馏）</li>
-          <li>大脑协调器（意图理解 + 任务拆解）</li>
-          <li>手器官：终端 + 文件 + Git + MCP</li>
-          <li>CLI 入口 + Web 界面</li>
-          <li>接入 3+ 主流模型 API</li>
-        </ul>
-      </div>
-      <div class="roadmap-item fade-up">
-        <div class="roadmap-phase">PHASE 2 — Q4 2026</div>
-        <div class="roadmap-title">感知扩张</div>
-        <p class="roadmap-desc">补全感知器官，让 Agent 真正「看得见、听得懂」。</p>
-        <ul class="roadmap-items">
-          <li>眼器官：OCR + 截图分析 + 键鼠模拟</li>
-          <li>耳器官：ASR 语音识别 + TTS 语音合成</li>
-          <li>触觉器官：文件监听 + 环境探测</li>
-          <li>神经系统：超时重试 + 自动告警</li>
-          <li>跨平台 GUI（Tauri v2）</li>
-          <li>微信 / 飞书 / 钉钉接入</li>
-        </ul>
-      </div>
-      <div class="roadmap-item fade-up">
-        <div class="roadmap-phase">PHASE 3 — Q1 2027</div>
-        <div class="roadmap-title">进化爆发</div>
-        <p class="roadmap-desc">激活进化引擎，让 Agent 真正开始「自我进化」。</p>
-        <ul class="roadmap-items">
-          <li>进化引擎 5 步闭环（Monitor→Adopt）</li>
-          <li>技能注册表 + 技能市场（内测）</li>
-          <li>多 Agent 协作（子 Agent 派发 + 结果聚合）</li>
-          <li>企业级 RBAC 权限管理</li>
-          <li>开放核心模块开源（MIT License）</li>
-        </ul>
-      </div>
-      <div class="roadmap-item fade-up">
-        <div class="roadmap-phase">PHASE 4 — Q2+ 2027</div>
-        <div class="roadmap-title">生态繁荣</div>
-        <p class="roadmap-desc">打造开放的 Agent 生态，连接开发者、企业与用户。</p>
-        <ul class="roadmap-items">
-          <li>开放技能市场（开放注册）</li>
-          <li>插件开发者 SDK</li>
-          <li>企业知识库深度集成</li>
-          <li>Plugin Store 正式上线</li>
-          <li>多语言国际化支持</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ═══════════════════════ CTA ═══════════════════════ -->
-<section class="container">
-  <div class="cta-section fade-up">
-    <h2>打造真正会进化的 Agent</h2>
-    <p>无论是开发者、团队还是企业，OpenNewt OS 都能为你的 AI 战略提供下一代架构支撑。</p>
-    <div class="hero-actions" style="margin-bottom:0;">
-      <button class="btn-primary" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">
-        预约产品演示
-      </button>
-      <button class="btn-outline" onclick="document.getElementById('comparison').scrollIntoView({behavior:'smooth'})">
-        了解更多 →
-      </button>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════ CONTACT ═══════════════════════ -->
-<section class="problem" id="contact">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-label">联系我们</div>
-      <h2 class="section-title">开启合作</h2>
-      <p class="section-sub">无论你是投资人、开发者还是企业用户，欢迎联系我们。</p>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:40px;">
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">📧</span>
-          <span class="organ-detail-title">商务合作</span>
-        </div>
-        <p class="organ-detail-desc">企业授权、私有部署、品牌定制，欢迎洽谈合作。</p>
-        <div class="organ-tags" style="margin-top:12px;">
-          <span class="organ-tag">424321066@qq.com</span>
+<!-- How it works -->
+<section id="how">
+  <div class="section-inner">
+    <div class="section-label reveal" data-i18n="how.label">工作原理</div>
+    <h2 class="section-title reveal" data-i18n="how.title">三步入门，即刻体验</h2>
+    <p class="section-desc reveal" data-i18n="how.desc">
+      从下载到开始使用，整个过程不超过 5 分钟。
+    </p>
+    <div class="steps">
+      <div class="glass-card step reveal">
+        <div class="step-title" data-i18n="how.s1.title">下载 & 安装</div>
+        <div class="step-desc" data-i18n="how.s1.desc">
+          从 GitHub Releases 下载对应平台的安装包，双击安装，无需任何依赖。
         </div>
       </div>
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">💬</span>
-          <span class="organ-detail-title">开发者社区</span>
-        </div>
-        <p class="organ-detail-desc">开源项目、技术讨论、插件开发，欢迎加入共建。</p>
-        <div class="organ-tags" style="margin-top:12px;">
-          <span class="organ-tag green">GitHub</span>
+      <div class="glass-card step reveal">
+        <div class="step-title" data-i18n="how.s2.title">配置 LLM</div>
+        <div class="step-desc" data-i18n="how.s2.desc">
+          在设置中填入你的 API Key（OpenAI / DeepSeek / Anthropic 等），或连接本地 Ollama 模型。
         </div>
       </div>
-      <div class="organ-detail-card fade-up">
-        <div class="organ-detail-header">
-          <span class="organ-detail-icon">🤝</span>
-          <span class="organ-detail-title">投资洽谈</span>
-        </div>
-        <p class="organ-detail-desc">如果你对下一代 AI Agent 操作系统感兴趣，欢迎交流。</p>
-        <div class="organ-tags" style="margin-top:12px;">
-          <span class="organ-tag accent">Wechat:Axonewt</span>
+      <div class="glass-card step reveal">
+        <div class="step-title" data-i18n="how.s3.title">开始对话</div>
+        <div class="step-desc" data-i18n="how.s3.desc">
+          选择模型，输入任务。Agent 自动调用工具链，读取文件、搜索信息、执行操作，一气呵成。
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
-<footer class="footer">
-  <div class="container footer-inner">
-    <div class="footer-logo">
-      <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-        <circle cx="16" cy="16" r="14" stroke="#22d3ee" stroke-width="1.5" fill="none"/>
-        <circle cx="16" cy="16" r="8" stroke="#818cf8" stroke-width="1.5" fill="none"/>
-        <circle cx="16" cy="16" r="3" fill="#22d3ee"/>
-      </svg>
-      <span style="font-weight:800;">OpenNewt</span>
-    </div>
-    <div class="footer-copy">© 2026 OpenNewt OS. All rights reserved.</div>
+<!-- CTA -->
+<section class="cta" id="cta">
+  <div class="reveal">
+    <h2 data-i18n="cta.title">准备好提升效率了吗？</h2>
+    <p data-i18n="cta.desc">
+      OpenNewt 完全免费开源。下载即用，让你的 AI Agent 开始工作。
+    </p>
+    <a href="https://github.com/Axonewt/opennewt" target="_blank" rel="noopener" class="btn btn-primary" data-i18n="cta.btn">
+      GitHub 获取 &#8594;
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div style="font-weight:600; color: var(--text-secondary);">OpenNewt</div>
     <div class="footer-links">
-      <a href="#organ">架构</a>
-      <a href="#tech">技术</a>
-      <a href="#roadmap">路线图</a>
-      <a href="#contact">联系</a>
+      <a href="https://github.com/Axonewt/opennewt" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/Axonewt/opennewt/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      <a href="mailto:hello@opennewt.dev" data-i18n="footer.contact">联系</a>
     </div>
+    <div data-i18n="footer.copyright">&copy; 2026 OpenNewt. All rights reserved.</div>
   </div>
 </footer>
 
-<!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
 <script>
-  // Nav scroll effect
-  const nav = document.getElementById('nav');
-  window.addEventListener('scroll', () => {
-    nav.classList.toggle('scrolled', window.scrollY > 40);
-  });
+  /* ============================================================
+     I18N DICTIONARY — 5 languages
+     ============================================================ */
+  const i18n = {
+    zh: {
+      'nav.features':'特性','nav.how':'工作原理','nav.download':'下载','nav.start':'开始使用',
+      'hero.badge':'v0.2.0 已发布','hero.line1':'用','hero.line2':'重塑你的工作流',
+      'hero.desc':'OpenNewt 是下一代模块化 AI Agent 平台。连接任意 LLM，组合技能模块，让 AI 真正理解你的需求并自主执行任务。',
+      'hero.cta1':'免费开始','hero.cta2':'探索特性 →',
+      'features.label':'核心特性','features.title':'一切为了让 AI 真正工作',
+      'features.desc':'OpenNewt 采用模块化架构，每个能力都是可插拔的模块。你可以像搭乐高一样组装自己的 AI Agent。',
+      'features.f1.title':'模块化架构','features.f1.desc':'每个 AI 能力都是独立模块 — 聊天、工具调用、记忆、规划。按需组合，灵活扩展，无需修改核心代码。',
+      'features.f2.title':'多模型支持','features.f2.desc':'无缝接入 OpenAI、Anthropic、DeepSeek、Google 等主流 LLM，一键切换模型，自由选择最适合的引擎。',
+      'features.f3.title':'工具链集成','features.f3.desc':'内置文件系统、浏览器、Shell 执行器等工具模块。Agent 可以读文件、上网搜索、执行代码，真正自主完成复杂任务。',
+      'features.f4.title':'持久记忆','features.f4.desc':'向量数据库驱动的长期记忆系统。Agent 记住你的偏好、历史对话和项目上下文，越用越懂你。',
+      'features.f5.title':'跨平台桌面应用','features.f5.desc':'基于 Electron 的桌面客户端，Windows / macOS / Linux 全平台支持。原生体验，离线可用，数据完全由你掌控。',
+      'features.f6.title':'开源 & 隐私优先','features.f6.desc':'完全开源（MIT 协议）。你的 API Key、对话数据、配置文件全部存储在本地，不上传任何数据到第三方服务器。',
+      'download.label':'获取 OpenNewt','download.title':'下载桌面客户端',
+      'download.desc':'支持 Windows、macOS 和 Linux。从 GitHub Releases 获取最新版本。',
+      'download.btn':'下载 OpenNewt','download.version_loading':'正在获取版本号...',
+      'download.version_fallback':'查看所有版本',
+      'download.platform_win':'Windows','download.platform_mac':'macOS','download.platform_linux':'Linux',
+      'how.label':'工作原理','how.title':'三步入门，即刻体验',
+      'how.desc':'从下载到开始使用，整个过程不超过 5 分钟。',
+      'how.s1.title':'下载 & 安装','how.s1.desc':'从 GitHub Releases 下载对应平台的安装包，双击安装，无需任何依赖。',
+      'how.s2.title':'配置 LLM','how.s2.desc':'在设置中填入你的 API Key（OpenAI / DeepSeek / Anthropic 等），或连接本地 Ollama 模型。',
+      'how.s3.title':'开始对话','how.s3.desc':'选择模型，输入任务。Agent 自动调用工具链，读取文件、搜索信息、执行操作，一气呵成。',
+      'cta.title':'准备好提升效率了吗？','cta.desc':'OpenNewt 完全免费开源。下载即用，让你的 AI Agent 开始工作。',
+      'cta.btn':'GitHub 获取 →','footer.contact':'联系','footer.copyright':'© 2026 OpenNewt. All rights reserved.'
+    },
+    en: {
+      'nav.features':'Features','nav.how':'How It Works','nav.download':'Download','nav.start':'Get Started',
+      'hero.badge':'v0.2.0 Released','hero.line1':'','hero.line2':'Revolutionize Your Workflow',
+      'hero.desc':'OpenNewt is a next-generation modular AI Agent platform. Connect any LLM, compose skill modules, and let AI truly understand your needs and execute tasks autonomously.',
+      'hero.cta1':'Get Started Free','hero.cta2':'Explore Features →',
+      'features.label':'Core Features','features.title':'Everything to Make AI Truly Work',
+      'features.desc':'OpenNewt features a modular architecture where every capability is a pluggable module. Assemble your own AI Agent like building blocks.',
+      'features.f1.title':'Modular Architecture','features.f1.desc':'Each AI capability is an independent module — chat, tool calling, memory, planning. Mix and match, extend flexibly without modifying core code.',
+      'features.f2.title':'Multi-Model Support','features.f2.desc':'Seamlessly integrate OpenAI, Anthropic, DeepSeek, Google, and other major LLMs. Switch models with one click and choose the best engine freely.',
+      'features.f3.title':'Toolchain Integration','features.f3.desc':'Built-in file system, browser, shell executor, and other tool modules. Agents can read files, search the web, execute code, and truly complete complex tasks autonomously.',
+      'features.f4.title':'Persistent Memory','features.f4.desc':'Vector database-driven long-term memory system. Agents remember your preferences, conversation history, and project context — getting smarter the more you use them.',
+      'features.f5.title':'Cross-Platform Desktop App','features.f5.desc':'Electron-based desktop client with full Windows, macOS, and Linux support. Native experience, works offline, your data is fully under your control.',
+      'features.f6.title':'Open Source & Privacy First','features.f6.desc':'Fully open source (MIT license). Your API keys, conversations, and configs are stored locally — no data is ever uploaded to third-party servers.',
+      'download.label':'Get OpenNewt','download.title':'Download Desktop Client',
+      'download.desc':'Available for Windows, macOS, and Linux. Get the latest version from GitHub Releases.',
+      'download.btn':'Download OpenNewt','download.version_loading':'Fetching version...',
+      'download.version_fallback':'View all releases',
+      'download.platform_win':'Windows','download.platform_mac':'macOS','download.platform_linux':'Linux',
+      'how.label':'How It Works','how.title':'Get Started in Three Steps',
+      'how.desc':'From download to your first conversation — takes less than 5 minutes.',
+      'how.s1.title':'Download & Install','how.s1.desc':'Download the installer for your platform from GitHub Releases. Double-click to install, no dependencies required.',
+      'how.s2.title':'Configure LLM','how.s2.desc':'Enter your API key (OpenAI, DeepSeek, Anthropic, etc.) in settings, or connect to a local Ollama model.',
+      'how.s3.title':'Start Chatting','how.s3.desc':'Pick a model, describe your task. The Agent automatically orchestrates the toolchain — reading files, searching, executing — all in one seamless flow.',
+      'cta.title':'Ready to Boost Your Productivity?','cta.desc':'OpenNewt is completely free and open source. Download and start letting your AI Agent work for you.',
+      'cta.btn':'Get on GitHub →','footer.contact':'Contact','footer.copyright':'© 2026 OpenNewt. All rights reserved.'
+    },
+    ja: {
+      'nav.features':'機能','nav.how':'仕組み','nav.download':'ダウンロード','nav.start':'はじめる',
+      'hero.badge':'v0.2.0 リリース','hero.line1':'','hero.line2':'でワークフローを革新',
+      'hero.desc':'OpenNewtは次世代のモジュール型AI Agentプラットフォームです。あらゆるLLMを接続し、スキルモジュールを組み合わせて、AIがあなたのニーズを理解し自律的にタスクを実行します。',
+      'hero.cta1':'無料ではじめる','hero.cta2':'機能を見る →',
+      'features.label':'主要機能','features.title':'AIを本当に機能させるために',
+      'features.desc':'OpenNewtはモジュール型アーキテクチャを採用し、すべての機能がプラグ可能なモジュールです。ブロックを組み立てるように独自のAI Agentを構築できます。',
+      'features.f1.title':'モジュール型アーキテクチャ','features.f1.desc':'各AI機能は独立したモジュール — チャット、ツール呼び出し、記憶、計画。必要に応じて組み合わせ、柔軟に拡張可能で、コアコードの変更は不要です。',
+      'features.f2.title':'マルチモデル対応','features.f2.desc':'OpenAI、Anthropic、DeepSeek、Googleなど主要LLMにシームレスに接続。ワンクリックでモデルを切り替え、最適なエンジンを自由に選択できます。',
+      'features.f3.title':'ツールチェーン統合','features.f3.desc':'ファイルシステム、ブラウザ、Shell実行など、組み込みツールモジュール。Agentはファイルを読み取り、ウェブ検索し、コードを実行して、複雑なタスクを自律的に完了します。',
+      'features.f4.title':'永続的メモリ','features.f4.desc':'ベクトルデータベース駆動の長期記憶システム。Agentはあなたの好み、会話履歴、プロジェクトコンテキストを記憶し、使えば使うほど賢くなります。',
+      'features.f5.title':'クロスプラットフォーム','features.f5.desc':'Electronベースのデスクトップクライアント。Windows/macOS/Linuxをフルサポート。ネイティブ体験、オフライン対応、データは完全にあなたの管理下にあります。',
+      'features.f6.title':'オープンソース & プライバシー重視','features.f6.desc':'MITライセンスで完全オープンソース。APIキー、会話データ、設定ファイルはすべてローカルに保存され、第三者サーバーには一切アップロードされません。',
+      'download.label':'OpenNewtを入手','download.title':'デスクトップ版をダウンロード',
+      'download.desc':'Windows、macOS、Linuxに対応。GitHub Releasesから最新版を入手してください。',
+      'download.btn':'OpenNewtをダウンロード','download.version_loading':'バージョン取得中...',
+      'download.version_fallback':'すべてのリリースを見る',
+      'download.platform_win':'Windows','download.platform_mac':'macOS','download.platform_linux':'Linux',
+      'how.label':'仕組み','how.title':'3ステップですぐに始められます',
+      'how.desc':'ダウンロードから使い始めるまで、わずか5分です。',
+      'how.s1.title':'ダウンロード & インストール','how.s1.desc':'GitHub Releasesからお使いのプラットフォームのインストーラーをダウンロードし、ダブルクリックでインストール。依存関係は不要です。',
+      'how.s2.title':'LLMの設定','how.s2.desc':'設定でAPIキー（OpenAI、DeepSeek、Anthropicなど）を入力するか、ローカルのOllamaモデルに接続します。',
+      'how.s3.title':'会話を開始','how.s3.desc':'モデルを選択し、タスクを入力。Agentが自動的にツールチェーンを編成し、ファイル読み取り、情報検索、コード実行をシームレスに行います。',
+      'cta.title':'生産性を向上させる準備はできましたか？','cta.desc':'OpenNewtは完全無料のオープンソースです。ダウンロードして、AI Agentに仕事を任せましょう。',
+      'cta.btn':'GitHubで入手 →','footer.contact':'お問い合わせ','footer.copyright':'© 2026 OpenNewt. All rights reserved.'
+    },
+    ko: {
+      'nav.features':'기능','nav.how':'작동 방식','nav.download':'다운로드','nav.start':'시작하기',
+      'hero.badge':'v0.2.0 출시','hero.line1':'','hero.line2':'으로 워크플로우를 혁신하세요',
+      'hero.desc':'OpenNewt는 차세대 모듈형 AI Agent 플랫폼입니다. 모든 LLM을 연결하고 스킬 모듈을 조합하여 AI가 사용자의 요구를 진정으로 이해하고 자율적으로 작업을 실행하게 합니다.',
+      'hero.cta1':'무료로 시작하기','hero.cta2':'기능 살펴보기 →',
+      'features.label':'핵심 기능','features.title':'AI가 진정으로 작동하도록',
+      'features.desc':'OpenNewt는 모든 기능이 플러그 가능한 모듈로 구성된 모듈형 아키텍처를 채택했습니다. 블록을 조립하듯 나만의 AI Agent를 구축하세요.',
+      'features.f1.title':'모듈형 아키텍처','features.f1.desc':'각 AI 기능은 독립적인 모듈 — 채팅, 도구 호출, 메모리, 계획. 필요에 따라 조합하고 유연하게 확장하며 핵심 코드 수정이 필요 없습니다.',
+      'features.f2.title':'다중 모델 지원','features.f2.desc':'OpenAI, Anthropic, DeepSeek, Google 등 주요 LLM을 원활하게 통합. 클릭 한 번으로 모델을 전환하고 최적의 엔진을 자유롭게 선택하세요.',
+      'features.f3.title':'도구 체인 통합','features.f3.desc':'파일 시스템, 브라우저, Shell 실행기 등 내장 도구 모듈. Agent가 파일을 읽고, 웹을 검색하고, 코드를 실행하여 복잡한 작업을 자율적으로 완료합니다.',
+      'features.f4.title':'영구 메모리','features.f4.desc':'벡터 데이터베이스 기반의 장기 메모리 시스템. Agent가 사용자의 선호도, 대화 기록, 프로젝트 컨텍스트를 기억하여 사용할수록 더 똑똑해집니다.',
+      'features.f5.title':'크로스 플랫폼 앱','features.f5.desc':'Electron 기반 데스크톱 클라이언트. Windows/macOS/Linux 전체 지원. 네이티브 경험, 오프라인 사용 가능, 데이터는 완전히 사용자가 통제합니다.',
+      'features.f6.title':'오픈소스 & 프라이버시 우선','features.f6.desc':'MIT 라이선스로 완전한 오픈소스. API 키, 대화 데이터, 설정 파일은 모두 로컬에 저장되며 제3자 서버에 업로드되지 않습니다.',
+      'download.label':'OpenNewt 받기','download.title':'데스크톱 클라이언트 다운로드',
+      'download.desc':'Windows, macOS, Linux에서 사용 가능. GitHub Releases에서 최신 버전을 받으세요.',
+      'download.btn':'OpenNewt 다운로드','download.version_loading':'버전 확인 중...',
+      'download.version_fallback':'모든 릴리스 보기',
+      'download.platform_win':'Windows','download.platform_mac':'macOS','download.platform_linux':'Linux',
+      'how.label':'작동 방식','how.title':'세 단계로 바로 시작하세요',
+      'how.desc':'다운로드부터 첫 대화까지 5분도 걸리지 않습니다.',
+      'how.s1.title':'다운로드 & 설치','how.s1.desc':'GitHub Releases에서 사용 중인 플랫폼의 설치 프로그램을 다운로드하고 더블 클릭으로 설치하세요. 별도의 의존성이 필요 없습니다.',
+      'how.s2.title':'LLM 설정','how.s2.desc':'설정에서 API 키(OpenAI, DeepSeek, Anthropic 등)를 입력하거나 로컬 Ollama 모델에 연결하세요.',
+      'how.s3.title':'대화 시작','how.s3.desc':'모델을 선택하고 작업을 입력하세요. Agent가 자동으로 도구 체인을 조정하여 파일 읽기, 정보 검색, 코드 실행을 한 번에 수행합니다.',
+      'cta.title':'생산성을 높일 준비가 되셨나요?','cta.desc':'OpenNewt는 완전 무료 오픈소스입니다. 지금 다운로드하여 AI Agent가 일하게 하세요.',
+      'cta.btn':'GitHub에서 받기 →','footer.contact':'문의','footer.copyright':'© 2026 OpenNewt. All rights reserved.'
+    },
+    ru: {
+      'nav.features':'Возможности','nav.how':'Как работает','nav.download':'Скачать','nav.start':'Начать',
+      'hero.badge':'v0.2.0 выпущена','hero.line1':'','hero.line2':'— переосмыслите рабочий процесс',
+      'hero.desc':'OpenNewt — модульная платформа AI Agent нового поколения. Подключайте любые LLM, комбинируйте модули навыков, и пусть ИИ по-настоящему понимает ваши задачи и выполняет их автономно.',
+      'hero.cta1':'Начать бесплатно','hero.cta2':'Возможности →',
+      'features.label':'Ключевые возможности','features.title':'Всё, чтобы ИИ действительно работал',
+      'features.desc':'Модульная архитектура OpenNewt позволяет каждой функции быть подключаемым модулем. Собирайте своего AI Agent как конструктор.',
+      'features.f1.title':'Модульная архитектура','features.f1.desc':'Каждая функция ИИ — независимый модуль: чат, вызов инструментов, память, планирование. Комбинируйте по необходимости, расширяйте гибко без изменения ядра.',
+      'features.f2.title':'Поддержка многих моделей','features.f2.desc':'Бесшовная интеграция с OpenAI, Anthropic, DeepSeek, Google и другими LLM. Переключайте модели одним кликом, свободно выбирайте оптимальный движок.',
+      'features.f3.title':'Интеграция инструментов','features.f3.desc':'Встроенные модули: файловая система, браузер, Shell. Agent читает файлы, ищет в интернете, выполняет код — полностью автономно решает сложные задачи.',
+      'features.f4.title':'Постоянная память','features.f4.desc':'Система долговременной памяти на векторной базе данных. Agent запоминает ваши предпочтения, историю диалогов и контекст проектов — становясь умнее с каждым использованием.',
+      'features.f5.title':'Кроссплатформенное приложение','features.f5.desc':'Десктопный клиент на Electron. Полная поддержка Windows, macOS и Linux. Нативный опыт, работа офлайн, полный контроль над данными.',
+      'features.f6.title':'Открытый код и приватность','features.f6.desc':'Полностью открытый исходный код (MIT). Ваши API-ключи, диалоги и конфигурации хранятся локально — никакие данные не загружаются на сторонние серверы.',
+      'download.label':'Скачать OpenNewt','download.title':'Скачать десктопный клиент',
+      'download.desc':'Доступно для Windows, macOS и Linux. Загрузите последнюю версию из GitHub Releases.',
+      'download.btn':'Скачать OpenNewt','download.version_loading':'Получение версии...',
+      'download.version_fallback':'Все версии',
+      'download.platform_win':'Windows','download.platform_mac':'macOS','download.platform_linux':'Linux',
+      'how.label':'Как это работает','how.title':'Начните за три шага',
+      'how.desc':'От загрузки до первого разговора — менее 5 минут.',
+      'how.s1.title':'Загрузка и установка','how.s1.desc':'Скачайте установщик для вашей платформы из GitHub Releases. Двойной клик для установки, никаких зависимостей.',
+      'how.s2.title':'Настройка LLM','how.s2.desc':'Введите API-ключ (OpenAI, DeepSeek, Anthropic и др.) в настройках или подключитесь к локальной модели Ollama.',
+      'how.s3.title':'Начните общение','how.s3.desc':'Выберите модель, опишите задачу. Agent автоматически организует цепочку инструментов — чтение файлов, поиск, выполнение кода — всё в одном потоке.',
+      'cta.title':'Готовы повысить продуктивность?','cta.desc':'OpenNewt полностью бесплатен и имеет открытый исходный код. Скачайте и позвольте вашему AI Agent работать.',
+      'cta.btn':'Получить на GitHub →','footer.contact':'Контакты','footer.copyright':'© 2026 OpenNewt. Все права защищены.'
+    }
+  };
 
-  // Intersection Observer for fade-up
+  /* ============================================================
+     LANGUAGE LOGIC
+     ============================================================ */
+  let currentLang;
+
+  function detectLang() {
+    const saved = localStorage.getItem('lang');
+    if (saved && i18n[saved]) return saved;
+    const browser = (navigator.language || '').split('-')[0];
+    if (i18n[browser]) return browser;
+    return 'zh';
+  }
+
+  function applyLang(lang) {
+    currentLang = lang;
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang === 'ja' ? 'ja-JP' : lang === 'ko' ? 'ko-KR' : lang === 'ru' ? 'ru-RU' : 'en-US';
+    const dict = i18n[lang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (dict[key] !== undefined) {
+        el.textContent = dict[key];
+      }
+    });
+    // Also update the lang selector
+    const sel = document.getElementById('langSelect');
+    if (sel) sel.value = lang;
+    localStorage.setItem('lang', lang);
+  }
+
+  function switchLang(lang) {
+    applyLang(lang);
+    // Re-trigger version fetch with new language context (version badge uses English always)
+    fetchVersion();
+  }
+
+  /* ============================================================
+     THEME TOGGLE
+     ============================================================ */
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.classList.contains('dark')) {
+      html.classList.remove('dark');
+      btn.innerHTML = '&#9788;';
+      localStorage.setItem('theme', 'light');
+    } else {
+      html.classList.add('dark');
+      btn.innerHTML = '&#9789;';
+      localStorage.setItem('theme', 'dark');
+    }
+  }
+
+  /* Load saved theme */
+  (() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') {
+      document.documentElement.classList.remove('dark');
+      document.getElementById('themeBtn').innerHTML = '&#9788;';
+    }
+  })();
+
+  /* ============================================================
+     MOBILE MENU
+     ============================================================ */
+  function toggleMenu() {
+    document.getElementById('navLinks').classList.toggle('open');
+  }
+
+  /* ============================================================
+     SCROLL REVEAL
+     ============================================================ */
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-  // Counter animation
-  function animateCounters() {
-    document.querySelectorAll('.hero-stat-num').forEach(el => {
-      const text = el.textContent;
-      if (text === '∞' || text === '5G') return;
-      const num = parseInt(text);
-      if (isNaN(num)) return;
-      let current = 0;
-      const step = Math.ceil(num / 40);
-      const timer = setInterval(() => {
-        current = Math.min(current + step, num);
-        el.textContent = current + (text.includes('+') ? '+' : '');
-        if (current >= num) clearInterval(timer);
-      }, 30);
+  /* Close mobile menu on link click */
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.getElementById('navLinks').classList.remove('open');
     });
+  });
+
+  /* ============================================================
+     GITHUB VERSION FETCH (English version display)
+     ============================================================ */
+  async function fetchVersion() {
+    const versionInfo = document.getElementById('versionInfo');
+    if (!versionInfo) return;
+    const dict = i18n[currentLang] || i18n['zh'];
+    try {
+      const res = await fetch('https://api.github.com/repos/opennewt/releases/latest');
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      if (data.tag_name) {
+        versionInfo.innerHTML = 'Latest: <span class="version-badge">' + data.tag_name + '</span>';
+      } else {
+        throw new Error('No tag_name');
+      }
+    } catch (e) {
+      versionInfo.innerHTML = '<a href="https://github.com/opennewt/releases" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">' + dict['download.version_fallback'] + '</a>';
+    }
   }
-  setTimeout(animateCounters, 300);
+
+  /* ============================================================
+     INIT
+     ============================================================ */
+  (() => {
+    currentLang = detectLang();
+    applyLang(currentLang);
+    document.getElementById('langSelect').addEventListener('change', function() {
+      switchLang(this.value);
+    });
+    fetchVersion();
+  })();
 </script>
 
 </body>
